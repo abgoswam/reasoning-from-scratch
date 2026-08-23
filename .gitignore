@@ -1,3 +1,5 @@
+_reports
+
 # Plotting
 *.pdf
 *.png
@@ -9,6 +11,9 @@ ch08/01_main-chapter-code/evaluate_json.py
 ch06/01_main-chapter-code/qwen3-from-scratch-grpo-checkpoints/
 *-draft.ipynb
 ch07/01_main-chapter-code/*.py
+# ...but keep my own learning/run scripts, like ch06's trials_*.py
+!ch07/01_main-chapter-code/trials_*.py
+!ch07/01_main-chapter-code/submit_*.py
 checkpoints
 *.pth
 *.csv
@@ -227,3 +232,9 @@ chE/evaluate_math500.py
 chE/figures/
 chE/math500_test.json
 chE/qwen3/
+
+# Local GRPO run outputs (submit_XX scripts) and W&B staging
+ch07/01_main-chapter-code/runs/
+ch07/01_main-chapter-code/plots/
+ch07/01_main-chapter-code/qwen3/
+wandb/
