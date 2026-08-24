@@ -81,6 +81,21 @@ def wandb_log(payload, step):
         WANDB_RUN.log({k: v for k, v in payload.items() if v is not None},
                       step=step)
 
+def load_env_file(path=Path(__file__).parent / ".env"):
+    """Load KEY=VALUE lines from .env into os.environ, overriding the shell.
+
+    Overriding matters: this box exports a WANDB_API_KEY for the work instance,
+    and .env is what points these runs at the personal one.
+    """
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ[key.strip()] = value.strip().strip('"').strip("'")
+
 
 @torch.no_grad()
 def sample_response(
@@ -537,6 +552,7 @@ def train_rlvr_grpo(
 
 
 if __name__ == "__main__":
+    load_env_file()
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Train RLVR GRPO on the MATH dataset."
@@ -545,15 +561,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_project", type=str, default="rfs-ch07",
         help="Weights & Biases project name.",
-    )
-    parser.add_argument(
-        "--wandb_host", type=str, default="https://api.wandb.ai",
-        help="W&B server. Defaults to the public cloud (personal account).",
-    )
-    parser.add_argument(
-        "--wandb_config_dir", type=str, default="~/.config/wandb-personal",
-        help="W&B credential directory, kept separate from ~/.config/wandb "
-             "so a work login is never disturbed.",
     )
     parser.add_argument(
         "--wandb_entity", type=str, default=None,
@@ -668,15 +675,6 @@ if __name__ == "__main__":
                 "  Log in:      wandb login\n"
                 "  Or run untracked:  --no_wandb"
             )
-        os.environ["WANDB_BASE_URL"] = args.wandb_host
-        os.environ["WANDB_CONFIG_DIR"] = str(
-            Path(args.wandb_config_dir).expanduser()
-        )
-        if os.environ.pop("WANDB_API_KEY", None) is not None:
-            print(
-                "Ignoring WANDB_API_KEY inherited from the shell; "
-                f"using the stored credentials for {args.wandb_host}"
-            )
         WANDB_RUN = wandb.init(
             project=args.wandb_project,
             entity=args.wandb_entity,
@@ -689,7 +687,7 @@ if __name__ == "__main__":
         )
         run_tag = WANDB_RUN.id
         print(f"W&B run:    {WANDB_RUN.url}")
-        print(f"W&B host:   {args.wandb_host}")
+        print(f"W&B host:   {os.environ.get('WANDB_BASE_URL')}")
         print(f"W&B entity: {WANDB_RUN.entity}")
 
     print(f"Training the BASE model (stage 7.4_clip_ratio)")
@@ -741,6 +739,7 @@ if __name__ == "__main__":
         math_data=math_data,
         math500_eval_data=load_math500_test(),
         device=device,
+        checkpoint_dir=CHECKPOINT_DIR,
         steps=args.steps,
         num_rollouts=args.num_rollouts,
         max_new_tokens=args.max_new_tokens,

@@ -2,8 +2,8 @@
 # Source for "Build a Reasoning Model (From Scratch)": https://mng.bz/lZ5B
 # Code repository: https://github.com/rasbt/reasoning-from-scratch
 
-# Self-contained copy of ch07/03_rlvr_grpo_scripts_advanced/7_3_plus_tracking.py
-# (section 7.3 -- GRPO plus advantage and entropy tracking), with Weights &
+# Self-contained copy of ch06/02_rlvr_grpo_scripts_intro/rlvr_grpo_original_no_kl.py
+# (the section 7.2 baseline run -- plain GRPO, no KL term), with Weights &
 # Biases logging added. Everything the run needs is in this one file.
 #
 # The only changes from the original are marked "# WANDB" -- five sites:
@@ -15,9 +15,9 @@
 #   (+ argparse flags and wandb.init/finish in __main__)
 #
 # Check for drift against upstream with:
-#   diff <(sed -n "/^import argparse/,$p" submit_03_tracking.py) \
+#   diff <(sed -n "/^import argparse/,$p" submit_02_baseline.py) \
 #        <(sed -n "/^import argparse/,$p" \
-#          ../03_rlvr_grpo_scripts_advanced/7_3_plus_tracking.py)
+#          ../../ch06/02_rlvr_grpo_scripts_intro/rlvr_grpo_original_no_kl.py)
 #
 # W&B is REQUIRED unless you pass --no_wandb. If wandb is missing, unauthenticated,
 # or unreachable, the run aborts BEFORE the model loads rather than training blind.
@@ -26,10 +26,10 @@
 #   runs/<timestamp>-<wandb-run-id>/  metrics.csv  metrics.txt  outputs.txt
 #                                     wandb.txt    checkpoints/
 #
-# Run:
-#   python submit_03_tracking.py --steps 10 --num_rollouts 4 \
+# Run (the section 7.2 run from ch07_main.ipynb):
+#   python submit_02_baseline.py --steps 500 --max_new_tokens 1024 \
 #       --device cuda:3 --wandb_project rfs-ch07
-#   python submit_03_tracking.py --steps 10 --no_wandb    # local-only smoke test
+#   python submit_02_baseline.py --steps 10 --no_wandb    # local-only smoke test
 
 import argparse
 import os
@@ -121,6 +121,10 @@ def sample_response(
 
         probas = torch.softmax(logits, dim=-1)
         probas = top_p_filter(probas, top_p)
+
+        # In the core chapters, we used .cpu() for better consistency across systems,
+        # but it causes a 20% performance hit when training on GPUs
+        # next_token = torch.multinomial(probas.cpu(), num_samples=1).to(device)
         next_token = torch.multinomial(probas, num_samples=1)
 
         token_id = next_token.item()
@@ -140,28 +144,13 @@ def sample_response(
     return full_token_ids, input_ids.numel(), tokenizer.decode(generated)
 
 
-def sequence_logprob_and_entropy(model, token_ids, prompt_len):
+def sequence_logprob(model, token_ids, prompt_len):
     logits = model(token_ids.unsqueeze(0)).squeeze(0).float()
     logprobs = torch.log_softmax(logits, dim=-1)
 
     targets = token_ids[1:]
     selected = logprobs[:-1].gather(1, targets.unsqueeze(-1)).squeeze(-1)
-
-    # Log-prob of the generated answer tokens (sum over answer steps)
-    selected_answer_logprobs = selected[prompt_len - 1:]
-    logp_all_steps = torch.sum(selected_answer_logprobs)
-
-    # Entropy over the full vocab distribution at each answer step
-    all_answer_logprobs = logprobs[:-1][prompt_len - 1:]
-    if all_answer_logprobs.numel() == 0:  # Safeguard if the model immediately emits EOS token
-        entropy_all_steps = logp_all_steps.new_tensor(0.0)
-    else:
-        all_answer_probs = torch.exp(all_answer_logprobs)
-        plogp = all_answer_probs * all_answer_logprobs    # elementwise p * log p
-        step_entropy = -torch.sum(plogp, dim=-1)          # sum over vocab -> entropy per step
-        entropy_all_steps = torch.mean(step_entropy)      # average over answer steps
-
-    return logp_all_steps, entropy_all_steps
+    return selected[prompt_len - 1:].sum()
 
 
 def reward_rlvr(answer_text, ground_truth):
@@ -185,7 +174,7 @@ def compute_grpo_loss(
     top_p=0.9,
     skip_zero_adv=False,
 ):
-    roll_logps, roll_rewards, roll_entropies, samples = [], [], [], []
+    roll_rewards, samples, rollout_data = [], [], []
     prompt = render_prompt(example["problem"])
 
     was_training = model.training
@@ -201,12 +190,10 @@ def compute_grpo_loss(
             temperature=temperature,
             top_p=top_p,
         )
-        logp, entropy = sequence_logprob_and_entropy(model, token_ids, prompt_len)
         reward = reward_rlvr(text, example["answer"])
 
-        roll_logps.append(logp)
         roll_rewards.append(reward)
-        roll_entropies.append(entropy.item())
+        rollout_data.append((token_ids, prompt_len))
         samples.append(
             {
                 "text": text,
@@ -227,17 +214,22 @@ def compute_grpo_loss(
         atol=1e-8,
         rtol=0.0,
     )
+
     if skip_zero_adv and is_zero_adv:
         return {
             "loss": 0.0,
             "pg_loss": 0.0,
             "rewards": roll_rewards,
-            "entropies": roll_entropies,
             "advantages": advantages.detach().cpu().tolist(),
             "is_zero_adv": True,
             "samples": samples,
             "loss_tensor": None,
         }
+
+    roll_logps = []
+    for token_ids, prompt_len in rollout_data:
+        logp = sequence_logprob(model, token_ids, prompt_len)
+        roll_logps.append(logp)
 
     logps = torch.stack(roll_logps)
 
@@ -248,7 +240,6 @@ def compute_grpo_loss(
         "loss": loss.item(),
         "pg_loss": pg_loss.item(),
         "rewards": roll_rewards,
-        "entropies": roll_entropies,
         "advantages": advantages.detach().cpu().tolist(),
         "is_zero_adv": is_zero_adv,
         "samples": samples,
@@ -285,34 +276,27 @@ def append_step_metrics(
     reward_avg,
     tokens_per_sec,
     avg_response_len,
-    adv_avg,
-    adv_std,
-    entropy_avg,
     eval_acc=None,
 ):
     METRICS_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with METRICS_LOG_PATH.open("a", encoding="utf-8") as f:
         f.write(
             f"[Step {step_idx}/{total_steps}] "
-            f"loss={loss:.2f} reward_avg={reward_avg:.3f} "
+            f"loss={loss:.4f} reward_avg={reward_avg:.3f} "
             f"tokens_per_sec={tokens_per_sec:.1f} "
-            f"avg_response_len={avg_response_len:.1f}"
-            f" adv_avg={adv_avg:.2f}"
-            f" adv_std={adv_std:.2f}"
-            f" entropy_avg={entropy_avg:.2f}\n"
+            f"avg_response_len={avg_response_len:.1f}\n"
         )
     CSV_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not CSV_LOG_PATH.exists():
         CSV_LOG_PATH.write_text(
-            "step,total_steps,loss,reward_avg,tokens_per_sec,avg_response_len,adv_avg,adv_std,entropy_avg,eval_acc\n",
+            "step,total_steps,loss,reward_avg,tokens_per_sec,avg_response_len,eval_acc\n",
             encoding="utf-8",
         )
     with CSV_LOG_PATH.open("a", encoding="utf-8") as f:
         eval_acc_str = "" if eval_acc is None else f"{eval_acc:.6f}"
         f.write(
             f"{step_idx},{total_steps},{loss:.6f},{reward_avg:.6f},"
-            f"{tokens_per_sec:.6f},{avg_response_len:.6f},"
-            f"{adv_avg:.6f},{adv_std:.6f},{entropy_avg:.6f},{eval_acc_str}\n"
+            f"{tokens_per_sec:.6f},{avg_response_len:.6f},{eval_acc_str}\n"
         )
 
     # WANDB (3/5) -- same numbers as the CSV row above
@@ -322,9 +306,6 @@ def append_step_metrics(
             "reward_avg": reward_avg,
             "tokens_per_sec": tokens_per_sec,
             "avg_response_len": avg_response_len,
-            "adv_avg": adv_avg,
-            "adv_std": adv_std,
-            "entropy_avg": entropy_avg,
         },
         step=step_idx,
     )
@@ -334,7 +315,7 @@ def append_eval_metrics(step_idx, acc, correct, total):
     METRICS_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with METRICS_LOG_PATH.open("a", encoding="utf-8") as f:
         f.write(
-            f"[Eval step {step_idx}] math500_acc={acc:.2f} "
+            f"[Eval step {step_idx}] math500_acc={acc:.4f} "
             f"({correct}/{total})\n"
         )
 
@@ -403,10 +384,6 @@ def train_rlvr_grpo(
                 optimizer.step()
 
             reward_avg = torch.tensor(stats["rewards"]).mean().item()
-            entropy_avg = torch.tensor(stats["entropies"]).mean().item()
-            advantage_tensor = torch.tensor(stats["advantages"])
-            adv_avg = advantage_tensor.mean().item()
-            adv_std = advantage_tensor.std().item()
             step_time = time.perf_counter() - step_start
             step_tokens = sum(sample["gen_len"] for sample in stats["samples"])
             avg_response_len = (
@@ -461,9 +438,6 @@ def train_rlvr_grpo(
                 reward_avg,
                 tokens_per_sec,
                 avg_response_len,
-                adv_avg=adv_avg,
-                adv_std=adv_std,
-                entropy_avg=entropy_avg,
                 eval_acc=eval_acc,
             )
 
@@ -480,13 +454,10 @@ def train_rlvr_grpo(
                 eta_suffix = f" | {eta_part}"
             print(
                 f"[Step {current_step}/{steps}] "
-                f"loss={stats['loss']:.2f} "
+                f"loss={stats['loss']:.4f} "
                 f"reward_avg={reward_avg:.3f} "
                 f"tok/sec={tokens_per_sec:.1f} "
-                f"avg_resp_len={avg_response_len:.1f} "
-                f"adv_avg={adv_avg:.2f} "
-                f"adv_std={adv_std:.2f} "
-                f"entropy_avg={entropy_avg:.2f}"
+                f"avg_resp_len={avg_response_len:.1f}"
                 f"{eta_suffix}"
             )
     except KeyboardInterrupt:
@@ -512,44 +483,6 @@ if __name__ == "__main__":
         type=int,
         default=None,
         help="Number of training steps.",
-    )
-    # WANDB -- flags below are additions to the upstream script
-    parser.add_argument(
-        "--wandb_project",
-        type=str,
-        default="rfs-ch07",
-        help="Weights & Biases project name.",
-    )
-    parser.add_argument(
-        "--wandb_entity",
-        type=str,
-        default=None,
-        help="W&B entity (username or team). None uses your default.",
-    )
-    parser.add_argument(
-        "--wandb_name",
-        type=str,
-        default=None,
-        help="Run name shown in W&B. None lets W&B generate one.",
-    )
-    parser.add_argument(
-        "--no_wandb",
-        action="store_true",
-        help="Disable W&B and log to the local files only.",
-    )
-    parser.add_argument(
-        "--out_dir",
-        type=str,
-        default=None,
-        help="Where metrics, samples, and checkpoints go. Defaults to a fresh "
-             "./runs/<timestamp>-<wandb-run-id>/ directory.",
-    )
-    parser.add_argument(
-        "--device",
-        type=str,
-        default=None,
-        help="Torch device, e.g. cuda:3. None auto-detects, which picks cuda:0 "
-             "and will fail if that GPU is busy.",
     )
     parser.add_argument(
         "--num_rollouts",
@@ -609,6 +542,44 @@ if __name__ == "__main__":
         action="store_true",
         help="Append ETA to step logs.",
     )
+    # WANDB -- flags below are additions to the upstream script
+    parser.add_argument(
+        "--wandb_project",
+        type=str,
+        default="rfs-ch07",
+        help="Weights & Biases project name.",
+    )
+    parser.add_argument(
+        "--wandb_entity",
+        type=str,
+        default=None,
+        help="W&B entity (username or team). None uses your default.",
+    )
+    parser.add_argument(
+        "--wandb_name",
+        type=str,
+        default=None,
+        help="Run name shown in W&B. None lets W&B generate one.",
+    )
+    parser.add_argument(
+        "--no_wandb",
+        action="store_true",
+        help="Disable W&B and log to the local files only.",
+    )
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default=None,
+        help="Where metrics, samples, and checkpoints go. Defaults to a fresh "
+             "./runs/<timestamp>-<wandb-run-id>/ directory.",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help="Torch device, e.g. cuda:3. None auto-detects, which picks cuda:0 "
+             "and will fail if that GPU is busy.",
+    )
     args = parser.parse_args()
 
     # WANDB -- open the run FIRST. Any failure here aborts before the model
@@ -630,7 +601,7 @@ if __name__ == "__main__":
             name=args.wandb_name,
             config={
                 **vars(args),
-                "stage": "7.3_tracking",
+                "stage": "7.2_baseline",
                 "which_model": "base",
             },
         )
@@ -708,3 +679,4 @@ if __name__ == "__main__":
     # WANDB -- flush and close the run
     if WANDB_RUN is not None:
         WANDB_RUN.finish()
+

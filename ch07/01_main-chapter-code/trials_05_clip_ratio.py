@@ -12,7 +12,8 @@
 #   Part 2: the ratio, and why it is exp(difference)
 #   Part 3: clamping, and min(unclipped, clipped)
 #   Part 4: why clip_eps=10.0 means "off"
-#   Part 5: when the ratio is exactly 1, and why that is the default
+#   Part 5: the first inner epoch is plain policy gradient
+#   Part 6: which switch actually turns the clip on
 
 import torch
 
@@ -151,8 +152,8 @@ def part4_eps_sweep():
 
 
 # ---------------------------------------------------------------------------
-# Part 5 -- with inner_epochs=1 the ratio is identically 1, and then the
-# clipped loss has the SAME GRADIENT as chapter 6's.
+# Part 5 -- in the FIRST inner epoch the ratio is identically 1, and there
+# the clipped loss has the SAME GRADIENT as chapter 6's.
 #
 # The two losses do not have the same value:
 #     ch06:  -(adv * logp).mean()      ~ -12
@@ -164,6 +165,7 @@ def part4_eps_sweep():
 #                                       =   1   * d(logp_new)/dtheta
 # which is exactly chapter 6's gradient. So the first inner epoch of PPO IS
 # vanilla policy gradient, and the clip cannot bind because every ratio is 1.
+# Part 6 covers what happens in the epochs after that.
 # ---------------------------------------------------------------------------
 def part5_onpolicy_is_identity():
     print("=" * 74)
@@ -197,12 +199,71 @@ def part5_onpolicy_is_identity():
           f"{torch.allclose(theta_a.grad, theta_b.grad)}   <- what matters")
 
     print("\n  -> the loss numbers in the two CSVs are not comparable, but the")
-    print("     training is identical while ratio==1.")
+    print("     training is identical while ratio==1.\n")
+
+
+# ---------------------------------------------------------------------------
+# Part 6 -- so when does the clip ever DO anything?
+#
+# Only one thing makes the ratio leave 1: the model being updated while
+# old_logps stay fixed. In 7_4_plus_clip_ratio.py that is inner_epochs.
+#
+#   old_model = copy.deepcopy(model)     # frozen snapshot, once per step
+#   for _ in range(inner_epochs):
+#       ... compute_grpo_loss(model=model, old_model=old_model, ...)
+#       loss.backward(); optimizer.step()      # model moves, old_model does not
+#
+# Epoch 1 runs with model == old_model, so ratio == 1 and the clip is inert.
+# Epoch 2 runs AFTER an optimizer step, so the ratio is genuinely different
+# and the clip can bind. That is the whole mechanism.
+#
+# Both defaults matter, and they are not what you might guess:
+#
+#   7_4  --inner_epochs  default 2     <- the ratio DOES diverge by default
+#   7_4  --clip_eps      default 10.0  <- but clamp(r, -9, 11) never binds
+#   7_6  --inner_epochs  default 1     <- differs from 7_4; check per script
+#
+# So the shipped 7_4 run is not identical to 7_3: it takes two optimizer steps
+# per training step against a frozen snapshot. What it does NOT do is clip.
+# Lower clip_eps and the mechanism switches on.
+# ---------------------------------------------------------------------------
+def part6_what_turns_it_on():
+    print("=" * 74)
+    print("PART 6  the ratio only leaves 1 after an optimizer step")
+    print("=" * 74)
+
+    adv = advantages_from(REWARDS).detach()
+    theta = torch.zeros(4, requires_grad=True)
+    old_logps = NEW_LOGPS.detach()          # the frozen snapshot
+
+    print(f"  {'inner epoch':>12} {'ratios':>34} {'# clipped @0.2':>15}")
+    print("  " + "-" * 64)
+    for epoch in range(1, 4):
+        ratio = torch.exp((NEW_LOGPS + theta) - old_logps)
+        cr = torch.clamp(ratio, 0.8, 1.2)
+        obj = torch.minimum(ratio * adv, cr * adv)
+        n = int((~torch.isclose(obj, ratio * adv)).sum())
+        print(f"  {epoch:>12} "
+              f"{str([round(r, 3) for r in ratio.tolist()]):>34} {n:>15}")
+
+        # one optimizer step: theta moves, old_logps do not
+        loss = -obj.mean()
+        theta.grad = None
+        loss.backward()
+        with torch.no_grad():
+            theta -= 5.0 * theta.grad        # exaggerated lr, to make it visible
+
+    print("\n  -> epoch 1 always has ratio == 1 and clips nothing. Drift, and")
+    print("     therefore clipping, only appears from epoch 2 onward.")
     print()
-    print("     So 7_4_plus_clip_ratio.py at its shipped defaults")
-    print("     (clip_eps=10.0, inner_epochs=1) trains exactly like 7_3.")
-    print("     BOTH switches have to move before the chapter's new machinery")
-    print("     does anything at all.\n")
+    print("     Epochs 2 and 3 show the SAME ratios, which is the brake")
+    print("     working rather than a bug: torch.clamp has zero gradient")
+    print("     outside its bounds, so once a rollout is clipped it stops")
+    print("     contributing anything and cannot push the policy further.")
+    print()
+    print("     Practical rule: --clip_eps is what turns the clip on, and")
+    print("     --inner_epochs is what gives it anything to clip. 7_4 ships")
+    print("     inner_epochs=2 already, so lowering clip_eps alone is enough.\n")
 
 
 def main():
@@ -211,6 +272,7 @@ def main():
     part3_clipping()
     part4_eps_sweep()
     part5_onpolicy_is_identity()
+    part6_what_turns_it_on()
 
 
 if __name__ == "__main__":
