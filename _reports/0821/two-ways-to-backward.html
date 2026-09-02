@@ -1,0 +1,748 @@
+<title>Two Ways to Backward</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --ground: #eef1f5;
+    --surface: #ffffff;
+    --sunk: #e5e9f0;
+    --ink: #151a22;
+    --muted: #5a6472;
+    --faint: #8a93a2;
+    --line: #d3d9e2;
+    --accent: #2f5ed0;
+    --accent-soft: #dde5fa;
+    --warn: #b0510d;
+    --warn-soft: #f8e6d6;
+    --good: #0f7350;
+    --good-soft: #d9efe6;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e1218;
+      --surface: #171d26;
+      --sunk: #121821;
+      --ink: #e3e8ef;
+      --muted: #93a0b1;
+      --faint: #6c7889;
+      --line: #28313d;
+      --accent: #7fa3f7;
+      --accent-soft: #1c2942;
+      --warn: #eb9350;
+      --warn-soft: #33220f;
+      --good: #4dbe93;
+      --good-soft: #10291f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e1218;
+    --surface: #171d26;
+    --sunk: #121821;
+    --ink: #e3e8ef;
+    --muted: #93a0b1;
+    --faint: #6c7889;
+    --line: #28313d;
+    --accent: #7fa3f7;
+    --accent-soft: #1c2942;
+    --warn: #eb9350;
+    --warn-soft: #33220f;
+    --good: #4dbe93;
+    --good-soft: #10291f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16.5px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 24px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    nav.index { position: static !important; margin-bottom: 40px; }
+  }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    grid-column: 1 / -1;
+    border-bottom: 2px solid var(--ink);
+    padding: 64px 0 26px;
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 5.2vw, 3.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+  }
+  .standfirst {
+    font-size: 1.12rem;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 500; }
+
+  /* ---------- index rail ---------- */
+  nav.index {
+    position: sticky;
+    top: 28px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  nav.index p.rail-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.index ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+  nav.index a {
+    color: var(--muted);
+    text-decoration: none;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 4px;
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+    margin-left: -10px;
+  }
+  nav.index a:hover, nav.index a:focus-visible {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  nav.index .num { color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* ---------- sections ---------- */
+  main { min-width: 0; }
+  section { margin-bottom: 68px; scroll-margin-top: 24px; }
+  section > p, section > ul, section > ol { max-width: 68ch; }
+
+  h2 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.55rem;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 0 0 6px;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 2px;
+  }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .sec-file {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0 0 22px 30px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sec-file b { color: var(--accent); font-weight: 500; }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.02rem;
+    letter-spacing: -0.005em;
+    margin: 32px 0 8px;
+  }
+
+  p { margin: 0 0 15px; }
+  ul, ol { margin: 0 0 15px; padding-left: 1.2em; }
+  li { margin-bottom: 7px; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.1em 0.34em;
+    white-space: nowrap;
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 15px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; white-space: pre; }
+  .cmt { color: var(--faint); }
+  .hl { color: var(--accent); font-weight: 500; }
+
+  /* ---------- figures ---------- */
+  figure {
+    margin: 26px 0 30px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 22px 20px 16px;
+    overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; min-width: 540px; height: auto; color: var(--ink); }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- tables ---------- */
+  .tw { overflow-x: auto; margin: 0 0 22px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 480px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--faint);
+    border-bottom: 1.5px solid var(--line);
+    padding: 0 14px 8px 0;
+    vertical-align: bottom;
+  }
+  td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  td.mono, th.mono, .num-col { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .tag.on { background: var(--accent-soft); color: var(--accent); }
+  .tag.off { background: var(--sunk); color: var(--muted); border: 1px solid var(--line); }
+  .tag.cost { background: var(--warn-soft); color: var(--warn); }
+  .tag.free { background: var(--good-soft); color: var(--good); }
+
+  /* ---------- callout ---------- */
+  .note {
+    border-left: 3px solid var(--warn);
+    background: var(--warn-soft);
+    padding: 14px 18px;
+    margin: 0 0 20px;
+    border-radius: 0 4px 4px 0;
+    max-width: 68ch;
+  }
+  .note p { margin: 0 0 8px; }
+  .note p:last-child { margin: 0; }
+  .note .lbl {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  /* ---------- file cards ---------- */
+  .files { display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr)); gap: 14px; margin: 0 0 12px; }
+  .fcard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 15px 16px;
+  }
+  .fcard .fname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--accent); margin: 0 0 7px; word-break: break-all; }
+  .fcard .fq { font-family: var(--sans); font-size: 13.5px; line-height: 1.45; margin: 0; color: var(--ink); }
+  .fcard .fmeta { font-family: var(--sans); font-size: 11.5px; color: var(--faint); margin: 9px 0 0; }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+<div class="shell">
+
+<header class="masthead">
+  <p class="eyebrow">reasoning-from-scratch · ch06 · companion to “Where Gradients Live”</p>
+  <h1>Two Ways to Backward</h1>
+  <p class="standfirst">The book stacks every rollout's log-probability and calls <code>backward()</code> once. Your SWE-bench notebook calls it once <em>per rollout</em>. The gradients come out identical to float precision — but one holds <strong>N graphs</strong> in memory and the other holds <strong>one</strong>.</p>
+</header>
+
+<nav class="index" aria-label="Section index">
+  <p class="rail-title">Contents</p>
+  <ol>
+    <li><a href="#code"><span class="num">01</span><span>The two loops</span></a></li>
+    <li><a href="#memory"><span class="num">02</span><span>What memory does</span></a></li>
+    <li><a href="#funnel"><span class="num">03</span><span>The shared funnel</span></a></li>
+    <li><a href="#same"><span class="num">04</span><span>Why they agree</span></a></li>
+    <li><a href="#cost"><span class="num">05</span><span>What it costs</span></a></li>
+    <li><a href="#when"><span class="num">06</span><span>When it breaks</span></a></li>
+    <li><a href="#verdict"><span class="num">07</span><span>Which to use</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============================================================ -->
+<section id="code">
+  <h2><span class="num">01</span><span>The two loops</span></h2>
+  <p class="sec-file">book: <b>trials_00.py:143–183</b> + <b>:291</b> · notebook: <b>swe_grpo_one_step.ipynb</b> cell 42</p>
+
+  <p>Same objective, same math, different placement of one call.</p>
+
+  <h3>A — accumulate graphs, one backward</h3>
+<pre><code><span class="cmt"># trials_00.py, compute_grpo_loss</span>
+for _ in range(num_rollouts):
+    token_ids, prompt_len, text = sample_response(...)
+    logp = sequence_logprob(model, token_ids, prompt_len)
+    <span class="hl">roll_logps.append(logp)</span>          <span class="cmt"># graph stays alive</span>
+
+<span class="hl">logps   = torch.stack(roll_logps)</span>     <span class="cmt"># :180 — all N graphs still resident</span>
+pg_loss = -(advantages.detach() * logps).mean()
+
+<span class="cmt"># trials_00.py, train_rlvr_grpo</span>
+<span class="hl">stats["loss_tensor"].backward()</span>       <span class="cmt"># :291 — one call, frees all N</span></code></pre>
+
+  <h3>B — backward per rollout, accumulate gradients</h3>
+<pre><code><span class="cmt"># swe_grpo_one_step.ipynb, cell 42</span>
+opt.zero_grad(set_to_none=True)
+for g, a in zip(group, adv):
+    lp, _ = seq_logprob(g["messages"])
+    loss  = -(a.to(DEV) * lp) <span class="hl">/ len(group)</span>   <span class="cmt"># pre-divided → total is a mean</span>
+    <span class="hl">loss.backward()</span>                       <span class="cmt"># this rollout's graph freed HERE</span>
+    loss_total += loss.item()</code></pre>
+
+  <p>The pivot is that <code>backward()</code> <strong>frees the graph it walks</strong>, unless you pass <code>retain_graph=True</code>. In B that happens N times, each time releasing the rollout that just finished. In A nothing is freed until the very end, because <code>roll_logps</code> still holds a reference to every scalar — and a reference to a scalar keeps the entire graph behind it alive.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="memory">
+  <h2><span class="num">02</span><span>What memory does</span></h2>
+  <p class="sec-file">the whole difference, in one picture</p>
+
+  <figure>
+    <svg viewBox="0 0 820 430" role="img" aria-label="Two timelines comparing peak memory: strategy A stacks four rollout graphs before a single backward, reaching four units; strategy B builds and frees one graph per rollout, staying at one unit.">
+      <defs>
+        <marker id="dn" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 0 L 5 10 z" style="fill:var(--good)"/>
+        </marker>
+        <marker id="rt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- ===== strategy A ===== -->
+      <text x="24" y="22" font-size="13" font-weight="600" style="font-family:var(--sans);fill:var(--warn)">A · stack, then one backward</text>
+      <text x="24" y="38" font-size="11" style="font-family:var(--mono);fill:var(--muted)">trials_00.py:180</text>
+
+      <line x1="24" y1="172" x2="796" y2="172" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="24" y1="62" x2="796" y2="62" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--warn)"/>
+      <text x="792" y="56" text-anchor="end" font-size="11" font-weight="600" style="font-family:var(--sans);fill:var(--warn)">peak = 4 × graph</text>
+
+      <g style="fill:var(--warn-soft);stroke:var(--warn)" stroke-width="1.3">
+        <rect x="60" y="145" width="104" height="24" rx="2"/>
+        <rect x="196" y="145" width="104" height="24" rx="2"/><rect x="196" y="118" width="104" height="24" rx="2"/>
+        <rect x="332" y="145" width="104" height="24" rx="2"/><rect x="332" y="118" width="104" height="24" rx="2"/><rect x="332" y="91" width="104" height="24" rx="2"/>
+        <rect x="468" y="145" width="104" height="24" rx="2"/><rect x="468" y="118" width="104" height="24" rx="2"/><rect x="468" y="91" width="104" height="24" rx="2"/><rect x="468" y="64" width="104" height="24" rx="2"/>
+      </g>
+      <g font-size="10.5" text-anchor="middle" style="font-family:var(--mono);fill:var(--warn)">
+        <text x="112" y="161">G1</text>
+        <text x="248" y="161">G1</text><text x="248" y="134">G2</text>
+        <text x="384" y="161">G1</text><text x="384" y="134">G2</text><text x="384" y="107">G3</text>
+        <text x="520" y="161">G1</text><text x="520" y="134">G2</text><text x="520" y="107">G3</text><text x="520" y="80">G4</text>
+      </g>
+
+      <rect x="604" y="118" width="176" height="51" rx="3" style="fill:var(--surface);stroke:var(--warn)" stroke-width="1.6"/>
+      <text x="692" y="139" text-anchor="middle" font-size="11.5" font-weight="600" style="font-family:var(--mono);fill:var(--warn)">backward()</text>
+      <text x="692" y="156" text-anchor="middle" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">walks all 4, then frees all 4</text>
+
+      <g font-size="10.5" text-anchor="middle" style="font-family:var(--sans);fill:var(--faint)">
+        <text x="112" y="190">rollout 1</text><text x="248" y="190">rollout 2</text>
+        <text x="384" y="190">rollout 3</text><text x="520" y="190">rollout 4</text>
+      </g>
+      <text x="24" y="212" font-size="11" style="font-family:var(--sans);fill:var(--muted)">.grad — written once, at the end · size = number of parameters</text>
+
+      <line x1="24" y1="232" x2="796" y2="232" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+
+      <!-- ===== strategy B ===== -->
+      <text x="24" y="262" font-size="13" font-weight="600" style="font-family:var(--sans);fill:var(--good)">B · backward inside the loop</text>
+      <text x="24" y="278" font-size="11" style="font-family:var(--mono);fill:var(--muted)">notebook cell 42</text>
+
+      <line x1="24" y1="386" x2="796" y2="386" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="24" y1="359" x2="796" y2="359" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--good)"/>
+      <text x="792" y="353" text-anchor="end" font-size="11" font-weight="600" style="font-family:var(--sans);fill:var(--good)">peak = 1 × graph</text>
+
+      <g style="fill:var(--good-soft);stroke:var(--good)" stroke-width="1.3">
+        <rect x="60" y="359" width="104" height="24" rx="2"/>
+        <rect x="196" y="359" width="104" height="24" rx="2"/>
+        <rect x="332" y="359" width="104" height="24" rx="2"/>
+        <rect x="468" y="359" width="104" height="24" rx="2"/>
+      </g>
+      <g font-size="10.5" text-anchor="middle" style="font-family:var(--mono);fill:var(--good)">
+        <text x="112" y="375">G1</text><text x="248" y="375">G2</text>
+        <text x="384" y="375">G3</text><text x="520" y="375">G4</text>
+      </g>
+      <g stroke-width="1.4" marker-end="url(#dn)" style="stroke:var(--good)">
+        <line x1="176" y1="362" x2="176" y2="380"/><line x1="312" y1="362" x2="312" y2="380"/>
+        <line x1="448" y1="362" x2="448" y2="380"/><line x1="584" y1="362" x2="584" y2="380"/>
+      </g>
+      <text x="180" y="349" font-size="10" style="font-family:var(--sans);fill:var(--good)">freed</text>
+
+      <rect x="604" y="352" width="176" height="34" rx="3" style="fill:var(--surface);stroke:var(--good)" stroke-width="1.6"/>
+      <text x="692" y="373" text-anchor="middle" font-size="11.5" font-weight="600" style="font-family:var(--mono);fill:var(--good)">opt.step()</text>
+
+      <g font-size="10.5" text-anchor="middle" style="font-family:var(--sans);fill:var(--faint)">
+        <text x="112" y="404">rollout 1</text><text x="248" y="404">rollout 2</text>
+        <text x="384" y="404">rollout 3</text><text x="520" y="404">rollout 4</text>
+      </g>
+      <text x="24" y="426" font-size="11" style="font-family:var(--sans);fill:var(--muted)">.grad — <tspan style="fill:var(--good)" font-weight="600">+=</tspan> after each rollout · same size, no matter how many rollouts</text>
+    </svg>
+    <figcaption><b>The graphs are the variable; <code>.grad</code> is the constant.</b> A parameter's gradient buffer is exactly the size of the parameter, whether you accumulate into it once or a thousand times. Activation graphs are the opposite: each rollout's is as large as a full forward pass, and in strategy A they all coexist.</figcaption>
+  </figure>
+
+  <p>Everything <code>backward()</code> needs from a rollout — the saved activations, the log-softmax output, the retained keys — can be released the instant that rollout's contribution has been folded into <code>.grad</code>. Strategy B takes that option. Strategy A declines it, for no benefit here.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="funnel">
+  <h2><span class="num">03</span><span>The shared funnel</span></h2>
+  <p class="sec-file">why two different traversals land in the same place</p>
+
+  <p>Each forward pass builds its own chain of nodes — a fresh <code>MulBackward0</code>, a fresh <code>SumBackward0</code>, a fresh everything. Those chains never touch each other. But they all end at the <strong>same</strong> node.</p>
+
+  <p>PyTorch caches exactly one <code>AccumulateGrad</code> per leaf tensor and hands that same object to every graph that touches it. It is created the first time a parameter is used in a differentiable op, and never rebuilt:</p>
+
+<pre><code>SumBackward0 nodes distinct : True
+MulBackward0 nodes distinct : True
+
+<span class="hl">AccumulateGrad(w) SHARED    : True</span>
+  ...and it is the canonical one for w: True     <span class="cmt"># == get_gradient_edge(w).node</span></code></pre>
+
+  <figure>
+    <svg viewBox="0 0 820 330" role="img" aria-label="Four per-rollout graphs on the left, each built by its own forward pass, converging into a single shared AccumulateGrad node on the right that writes the parameter's grad.">
+      <defs>
+        <marker id="fn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="fnA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--accent)"/>
+        </marker>
+      </defs>
+
+      <text x="24" y="22" font-size="11.5" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--warn)">PER-ROLLOUT — rebuilt by every forward pass</text>
+      <text x="560" y="22" font-size="11.5" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--accent)">SHARED — made once</text>
+
+      <line x1="524" y1="34" x2="524" y2="306" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--line)"/>
+
+      <g style="fill:var(--surface);stroke:var(--warn)" stroke-width="1.4">
+        <rect x="26" y="44" width="330" height="40" rx="4"/>
+        <rect x="26" y="102" width="330" height="40" rx="4"/>
+        <rect x="26" y="160" width="330" height="40" rx="4"/>
+        <rect x="26" y="218" width="330" height="40" rx="4"/>
+      </g>
+      <g font-size="11" style="font-family:var(--mono);fill:var(--warn)">
+        <text x="42" y="62">rollout 1</text><text x="42" y="120">rollout 2</text>
+        <text x="42" y="178">rollout 3</text><text x="42" y="236">rollout 4</text>
+      </g>
+      <g font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">
+        <text x="126" y="70">MulBackward0 → SumBackward0 → …</text>
+        <text x="126" y="128">MulBackward0 → SumBackward0 → …</text>
+        <text x="126" y="186">MulBackward0 → SumBackward0 → …</text>
+        <text x="126" y="244">MulBackward0 → SumBackward0 → …</text>
+      </g>
+      <text x="26" y="284" font-size="11" font-style="italic" style="font-family:var(--sans);fill:var(--muted)">every node here is distinct · all of it is freed once its backward runs</text>
+
+      <!-- funnel lines -->
+      <path d="M 360 64  L 440 64  L 440 151 L 566 151" fill="none" stroke-width="1.6" marker-end="url(#fnA)" style="stroke:var(--accent)"/>
+      <path d="M 360 122 L 440 122 L 440 151" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <path d="M 360 180 L 440 180 L 440 151" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <path d="M 360 238 L 440 238 L 440 151" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+
+      <rect x="568" y="128" width="180" height="52" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2"/>
+      <text x="658" y="149" text-anchor="middle" font-size="12.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AccumulateGrad</text>
+      <text x="658" y="166" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--accent)">.variable is w</text>
+
+      <line x1="658" y1="180" x2="658" y2="208" stroke-width="1.8" marker-end="url(#fnA)" style="stroke:var(--accent)"/>
+      <text x="658" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">w.grad</text>
+      <text x="658" y="248" text-anchor="middle" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">one buffer, size of w</text>
+      <text x="658" y="284" text-anchor="middle" font-size="11" font-style="italic" style="font-family:var(--sans);fill:var(--accent)">never rebuilt, never scales with N</text>
+
+      <text x="440" y="112" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">next_functions</text>
+    </svg>
+    <figcaption><b>Separate graphs, one exit.</b> The chains on the left are rebuilt by every forward pass and disposable; the node on the right is created once per parameter and outlives all of them. Drawn for <code>w</code> alone — there is one such node per parameter, and every rollout's graph points at all of them.</figcaption>
+  </figure>
+
+  <p>That single picture explains both halves of this report. Everything <em>left</em> of the divider is per-rollout, so strategy A holding N of them costs N times the memory. Everything <em>right</em> of it is shared and constant-size, so <code>.grad</code> is identical either way.</p>
+
+  <h3>How the shared node fires</h3>
+
+  <p>The two strategies reach that node by different routes, and the node behaves differently in each. Counted with a hook registered directly on it:</p>
+
+<pre><code>strategy A: AccumulateGrad(w) executed <span class="hl">1</span> time(s)
+strategy B: AccumulateGrad(w) executed <span class="hl">3</span> time(s)
+w.grad A  : [0.667, 0.667]
+w.grad B  : [0.667, 0.667]
+identical : True</code></pre>
+
+  <figure>
+    <svg viewBox="0 0 820 290" role="img" aria-label="Strategy A buffers four incoming gradients, sums them and fires the accumulator once; strategy B fires the same accumulator four separate times, each adding into grad. Both reach the same total.">
+      <defs>
+        <marker id="fb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <text x="24" y="22" font-size="12.5" font-weight="600" style="font-family:var(--sans);fill:var(--warn)">A · one traversal, four branches</text>
+      <text x="440" y="22" font-size="12.5" font-weight="600" style="font-family:var(--sans);fill:var(--good)">B · four traversals</text>
+      <line x1="410" y1="34" x2="410" y2="264" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--line)"/>
+
+      <!-- A -->
+      <g font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">
+        <text x="26" y="62">g₁</text><text x="26" y="88">g₂</text>
+        <text x="26" y="114">g₃</text><text x="26" y="140">g₄</text>
+      </g>
+      <g stroke-width="1.4" marker-end="url(#fb)" stroke="currentColor">
+        <line x1="48" y1="58" x2="104" y2="76"/><line x1="48" y1="84" x2="104" y2="88"/>
+        <line x1="48" y1="110" x2="104" y2="100"/><line x1="48" y1="136" x2="104" y2="112"/>
+      </g>
+      <rect x="106" y="70" width="120" height="48" rx="4" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="166" y="90" text-anchor="middle" font-size="11" style="font-family:var(--mono)" fill="currentColor">InputBuffer</text>
+      <text x="166" y="106" text-anchor="middle" font-size="10" style="font-family:var(--sans);fill:var(--muted)">waits, then sums</text>
+
+      <line x1="230" y1="94" x2="272" y2="94" stroke-width="1.6" marker-end="url(#fb)" stroke="currentColor"/>
+      <text x="251" y="86" text-anchor="middle" font-size="10" style="font-family:var(--mono);fill:var(--muted)">Σg</text>
+
+      <rect x="274" y="70" width="120" height="48" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.8"/>
+      <text x="334" y="90" text-anchor="middle" font-size="10.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AccumulateGrad</text>
+      <text x="334" y="106" text-anchor="middle" font-size="10" style="font-family:var(--sans);fill:var(--accent)">fires once</text>
+
+      <text x="210" y="168" text-anchor="middle" font-size="11" style="font-family:var(--mono);fill:var(--muted)">w.grad = 0 + (g₁+g₂+g₃+g₄)</text>
+      <text x="210" y="192" text-anchor="middle" font-size="11" style="font-family:var(--sans);fill:var(--muted)">the engine counts how many edges</text>
+      <text x="210" y="207" text-anchor="middle" font-size="11" style="font-family:var(--sans);fill:var(--muted)">point at the node, and waits for all</text>
+
+      <!-- B -->
+      <g font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">
+        <text x="440" y="62">g₁</text><text x="440" y="88">g₂</text>
+        <text x="440" y="114">g₃</text><text x="440" y="140">g₄</text>
+      </g>
+      <g stroke-width="1.4" marker-end="url(#fb)" stroke="currentColor">
+        <line x1="462" y1="58" x2="596" y2="76"/><line x1="462" y1="84" x2="596" y2="88"/>
+        <line x1="462" y1="110" x2="596" y2="100"/><line x1="462" y1="136" x2="596" y2="112"/>
+      </g>
+      <g font-size="10" style="font-family:var(--mono);fill:var(--good)">
+        <text x="530" y="56">+=</text><text x="530" y="80">+=</text>
+        <text x="530" y="106">+=</text><text x="530" y="132">+=</text>
+      </g>
+      <rect x="598" y="70" width="120" height="48" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.8"/>
+      <text x="658" y="90" text-anchor="middle" font-size="10.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AccumulateGrad</text>
+      <text x="658" y="106" text-anchor="middle" font-size="10" style="font-family:var(--sans);fill:var(--accent)">fires four times</text>
+      <text x="740" y="98" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">same</text>
+      <text x="740" y="112" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">object</text>
+
+      <text x="614" y="168" text-anchor="middle" font-size="11" style="font-family:var(--mono);fill:var(--muted)">w.grad = ((((0+g₁)+g₂)+g₃)+g₄)</text>
+      <text x="614" y="192" text-anchor="middle" font-size="11" style="font-family:var(--sans);fill:var(--muted)">each backward() is an independent</text>
+      <text x="614" y="207" text-anchor="middle" font-size="11" style="font-family:var(--sans);fill:var(--muted)">traversal that knows nothing of the others</text>
+
+      <line x1="24" y1="234" x2="796" y2="234" stroke-width="1" style="stroke:var(--line)"/>
+      <text x="410" y="260" text-anchor="middle" font-size="12.5" font-weight="600" style="font-family:var(--sans);fill:var(--accent)">same total — addition is associative</text>
+    </svg>
+    <figcaption><b>Sum-then-add-once versus add-N-times.</b> Strategy A's engine does dependency counting: it sees four edges pointing at the accumulator, buffers the arriving gradients, and fires the node once with their sum. Strategy B's four independent traversals each fire it separately. The strategies are interchangeable not because they do the same thing, but because they do different orderings of the same associative operation.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="same">
+  <h2><span class="num">04</span><span>Why they produce the same gradient</span></h2>
+  <p class="sec-file">gradient accumulation, from the other direction</p>
+
+  <p>The loss is a mean over rollouts, and a mean is a sum of independent terms:</p>
+
+<pre><code>       −(A · logp).mean()   ==   Σᵢ  [ −(Aᵢ · logpᵢ) / N ]
+       └──── one graph ────┘        └── N separate graphs ──┘</code></pre>
+
+  <p>Term <em>i</em> touches only rollout <em>i</em>'s graph. Differentiation is linear, so the gradient of the sum equals the sum of the gradients — which is precisely what <code>.grad += …</code> computes across N backward calls. That is why <code>backward()</code> accumulates rather than assigns: this decomposition is the common case, not an edge case.</p>
+
+  <p>Checked rather than assumed — same weights, same inputs, both strategies:</p>
+
+<pre><code>loss A             : -0.12545899
+loss B (summed)    : -0.12545899
+gradients identical: <span class="hl">True</span>
+max abs diff       : 2.98e-08          <span class="cmt"># float32 rounding, nothing more</span></code></pre>
+
+  <div class="note">
+    <span class="lbl">The division is load-bearing</span>
+    <p><code>/ len(group)</code> inside the loop is what makes the accumulated total a <em>mean</em> rather than a <em>sum</em>. Drop it and every gradient is N× too large — with N = 6, an effective learning rate six times what you set. The book gets the same normalization for free from <code>.mean()</code>; strategy B has to spell it out.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="cost">
+  <h2><span class="num">05</span><span>What a rollout's graph actually costs</span></h2>
+  <p class="sec-file">measured on the op chain in <b>trials_00.py:117</b> sequence_logprob</p>
+
+  <p>Abstract until you price it. The dominant term is not the transformer — it is the vocabulary projection at the end. Measuring only the <code>out_head → .float() → log_softmax → gather</code> chain for Qwen3-0.6B (vocab 151,936):</p>
+
+<pre><code>T=64: retained 350.2 MB   →   <span class="hl">5.47 MB per token</span></code></pre>
+
+  <p>The culprit is <code>log_softmax</code> saving its own <code>[T, 151936]</code> float32 output for backward — 607 KB per token on that tensor alone. Extrapolated to a real rollout of 614 tokens (102-token prompt + 512 generated), and counting <em>only</em> this chain, not the 28 transformer layers:</p>
+
+  <div class="tw">
+  <table>
+    <tr><th class="num-col">num_rollouts</th><th class="num-col">A · stacked</th><th class="num-col">B · per-rollout</th><th></th></tr>
+    <tr><td class="mono">2</td><td class="mono">6.72 GB</td><td class="mono">3.36 GB</td><td><span class="tag free">both fine</span></td></tr>
+    <tr><td class="mono">4</td><td class="mono">13.44 GB</td><td class="mono">3.36 GB</td><td><span class="tag free">your current run</span></td></tr>
+    <tr><td class="mono">8</td><td class="mono">26.88 GB</td><td class="mono">3.36 GB</td><td><span class="tag cost">A gets tight</span></td></tr>
+    <tr><td class="mono">16</td><td class="mono">53.75 GB</td><td class="mono">3.36 GB</td><td><span class="tag cost">A cannot fit</span></td></tr>
+  </table>
+  </div>
+
+  <p>Your training job has 44.4 GiB free on <code>cuda:3</code> and runs <code>--num-rollouts 4</code>, so strategy A costs you roughly 10 GB of headroom you are not using for anything. It is also the concrete reason the notebook's advice — “to get a relatively good model, it requires at least <code>num_rollouts=8</code>” — collides with its own implementation: at 8 rollouts strategy A is spending ~27 GB on graphs that could have been ~3.4 GB.</p>
+
+  <div class="note">
+    <span class="lbl">Read this as a lower bound</span>
+    <p>The figure covers the output-head chain only. Add the 28 transformer layers' saved activations and the true per-rollout number is higher — which widens the gap rather than narrowing it. The point is the <em>multiplier</em> on N, not the exact constant.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="when">
+  <h2><span class="num">06</span><span>When you can't do it per rollout</span></h2>
+  <p class="sec-file">the condition that makes B legal</p>
+
+  <p>Strategy B is valid only because the loss <strong>decomposes</strong> — no term couples two rollouts inside the graph. Break that and B stops being an optimization and starts being a bug.</p>
+
+  <figure>
+    <svg viewBox="0 0 800 250" role="img" aria-label="Two loss shapes: a decomposable sum whose terms each touch one rollout graph and can be backwarded separately, versus a coupled term joining all four graphs that must be backwarded together.">
+      <text x="24" y="22" font-size="12.5" font-weight="600" style="font-family:var(--sans);fill:var(--good)">DECOMPOSES — B is safe</text>
+
+      <g style="fill:var(--surface);stroke:var(--good)" stroke-width="1.4">
+        <rect x="30" y="38" width="76" height="34" rx="3"/><rect x="130" y="38" width="76" height="34" rx="3"/>
+        <rect x="230" y="38" width="76" height="34" rx="3"/><rect x="330" y="38" width="76" height="34" rx="3"/>
+      </g>
+      <g font-size="11" text-anchor="middle" style="font-family:var(--mono);fill:var(--good)">
+        <text x="68" y="60">G1</text><text x="168" y="60">G2</text><text x="268" y="60">G3</text><text x="368" y="60">G4</text>
+      </g>
+      <g font-size="11" text-anchor="middle" style="font-family:var(--mono);fill:var(--muted)">
+        <text x="68" y="92">−A₁·lp₁/N</text><text x="168" y="92">−A₂·lp₂/N</text>
+        <text x="268" y="92">−A₃·lp₃/N</text><text x="368" y="92">−A₄·lp₄/N</text>
+      </g>
+      <text x="440" y="60" font-size="12" style="font-family:var(--sans);fill:var(--good)">four independent terms →</text>
+      <text x="440" y="78" font-size="12" style="font-family:var(--sans);fill:var(--good)">four independent backwards</text>
+      <text x="30" y="118" font-size="11.5" style="font-family:var(--sans);fill:var(--muted)">advantages are detached constants · a per-token KL to a frozen reference also decomposes</text>
+
+      <line x1="24" y1="138" x2="776" y2="138" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+
+      <text x="24" y="166" font-size="12.5" font-weight="600" style="font-family:var(--sans);fill:var(--warn)">COUPLES — B would be wrong</text>
+
+      <g style="fill:var(--surface);stroke:var(--warn)" stroke-width="1.4">
+        <rect x="30" y="182" width="76" height="34" rx="3"/><rect x="130" y="182" width="76" height="34" rx="3"/>
+        <rect x="230" y="182" width="76" height="34" rx="3"/><rect x="330" y="182" width="76" height="34" rx="3"/>
+      </g>
+      <g font-size="11" text-anchor="middle" style="font-family:var(--mono);fill:var(--warn)">
+        <text x="68" y="204">G1</text><text x="168" y="204">G2</text><text x="268" y="204">G3</text><text x="368" y="204">G4</text>
+      </g>
+      <path d="M 68 182 L 68 168 L 368 168 L 368 182" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <path d="M 168 182 L 168 168" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <path d="M 268 182 L 268 168" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <text x="440" y="196" font-size="12" style="font-family:var(--sans);fill:var(--warn)">one term spans all four graphs —</text>
+      <text x="440" y="214" font-size="12" style="font-family:var(--sans);fill:var(--warn)">they must be live simultaneously</text>
+      <text x="30" y="240" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">logps.logsumexp(0) · normalising by the group's total token count inside the graph</text>
+    </svg>
+    <figcaption><b>The test is whether any single term reads from more than one rollout's graph.</b> A group-level statistic computed from <code>logps</code> with grad still attached is the classic violation — the first <code>backward()</code> would free graphs the later terms still need, and PyTorch raises “Trying to backward through the graph a second time”.</figcaption>
+  </figure>
+
+  <p>In this chapter's GRPO neither loss has such a term. Advantages come from rewards that are plain Python floats, so they enter as constants — which is what the <code>.detach()</code> at <code>trials_00.py:183</code> documents. Chapter 7 adds a KL penalty, and that stays per-token against a frozen reference model, so it decomposes too.</p>
+
+  <p>Note that PyTorch does not silently produce a wrong answer here. Coupling plus per-rollout backward raises <code>RuntimeError: Trying to backward through the graph a second time</code>. The failure mode is loud.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="verdict">
+  <h2><span class="num">07</span><span>Which to use</span></h2>
+  <p class="sec-file">and what the book is buying with the other choice</p>
+
+  <div class="tw">
+  <table>
+    <tr><th></th><th>A · stack, one backward</th><th>B · backward per rollout</th></tr>
+    <tr><td><strong>Peak graph memory</strong></td><td class="mono">N × per-rollout</td><td class="mono">1 × per-rollout</td></tr>
+    <tr><td><strong>.grad memory</strong></td><td class="mono">1 × params</td><td class="mono">1 × params</td></tr>
+    <tr><td><strong>Backward launches</strong></td><td class="mono">1</td><td class="mono">N</td></tr>
+    <tr><td><strong>Total FLOPs</strong></td><td colspan="2" class="mono">identical</td></tr>
+    <tr><td><strong>Resulting gradient</strong></td><td colspan="2" class="mono">identical to float precision</td></tr>
+    <tr><td><strong>Normalization</strong></td><td>free, via <code>.mean()</code></td><td>manual, <code>/ len(group)</code></td></tr>
+    <tr><td><strong>Allows coupled terms</strong></td><td>yes</td><td>no</td></tr>
+    <tr><td><strong>Group stats for logging</strong></td><td>trivial — <code>logps</code> is right there</td><td>collect <code>.item()</code>s as you go</td></tr>
+  </table>
+  </div>
+
+  <p>For this workload B is strictly better and your notebook has it right. The extra N−1 backward launches are microseconds against a rollout that took seconds to generate.</p>
+
+  <p>What A buys is <strong>pedagogy</strong>, and that is a defensible reason in a book. <code>pg_loss = -(advantages.detach() * logps).mean()</code> is the GRPO objective written as one readable line, with the group-relative structure visible in the shapes: <code>advantages</code> and <code>logps</code> are both <code>[num_rollouts]</code>, and <code>.mean()</code> is the group average. Strategy B scatters that same equation across a loop body, where the <code>/ len(group)</code> reads like a detail rather than the definition. The book is optimizing for the reader; you were optimizing for the GPU.</p>
+
+  <h3>If you want B in the book's loop</h3>
+  <p>The change is contained. Move the backward inside <code>compute_grpo_loss</code>'s rollout loop, drop <code>roll_logps</code>, and divide by <code>num_rollouts</code> in the per-rollout loss. You lose <code>stats["loss_tensor"]</code>, so <code>train_rlvr_grpo</code> at <code>trials_00.py:291</code> stops calling <code>.backward()</code> and goes straight from the loss computation to <code>clip_grad_norm_</code>. Everything downstream — clipping, <code>step()</code>, the CSV metrics — is untouched, because <code>.grad</code> looks exactly the same either way.</p>
+</section>
+
+</main>
+</div>

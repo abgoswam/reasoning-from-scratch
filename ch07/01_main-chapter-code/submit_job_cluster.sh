@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Same as submit_job.sh, but runs CMD on the bonete cluster with 1 GPU.
+# Same as submit_job_local.sh, but runs CMD on the bonete cluster with 1 GPU.
 
 set -euo pipefail
 cd "$(dirname "$0")"

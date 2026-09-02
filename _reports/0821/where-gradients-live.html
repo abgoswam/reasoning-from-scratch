@@ -1,0 +1,825 @@
+<title>Where Gradients Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --ground: #eef1f5;
+    --surface: #ffffff;
+    --sunk: #e5e9f0;
+    --ink: #151a22;
+    --muted: #5a6472;
+    --faint: #8a93a2;
+    --line: #d3d9e2;
+    --accent: #2f5ed0;
+    --accent-soft: #dde5fa;
+    --warn: #b0510d;
+    --warn-soft: #f8e6d6;
+    --good: #0f7350;
+    --good-soft: #d9efe6;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e1218;
+      --surface: #171d26;
+      --sunk: #121821;
+      --ink: #e3e8ef;
+      --muted: #93a0b1;
+      --faint: #6c7889;
+      --line: #28313d;
+      --accent: #7fa3f7;
+      --accent-soft: #1c2942;
+      --warn: #eb9350;
+      --warn-soft: #33220f;
+      --good: #4dbe93;
+      --good-soft: #10291f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e1218;
+    --surface: #171d26;
+    --sunk: #121821;
+    --ink: #e3e8ef;
+    --muted: #93a0b1;
+    --faint: #6c7889;
+    --line: #28313d;
+    --accent: #7fa3f7;
+    --accent-soft: #1c2942;
+    --warn: #eb9350;
+    --warn-soft: #33220f;
+    --good: #4dbe93;
+    --good-soft: #10291f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16.5px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 24px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    nav.index { position: static !important; margin-bottom: 40px; }
+  }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    grid-column: 1 / -1;
+    border-bottom: 2px solid var(--ink);
+    padding: 64px 0 26px;
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 5.2vw, 3.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+  }
+  .standfirst {
+    font-size: 1.12rem;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 500; }
+
+  /* ---------- index rail ---------- */
+  nav.index {
+    position: sticky;
+    top: 28px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  nav.index p.rail-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.index ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+  nav.index a {
+    color: var(--muted);
+    text-decoration: none;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 4px;
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+    margin-left: -10px;
+  }
+  nav.index a:hover, nav.index a:focus-visible {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  nav.index .num { color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* ---------- sections ---------- */
+  main { min-width: 0; }
+  section { margin-bottom: 68px; scroll-margin-top: 24px; }
+  section > p, section > ul, section > ol { max-width: 68ch; }
+
+  h2 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.55rem;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 0 0 6px;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 2px;
+  }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .sec-file {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0 0 22px 30px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sec-file b { color: var(--accent); font-weight: 500; }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.02rem;
+    letter-spacing: -0.005em;
+    margin: 32px 0 8px;
+  }
+
+  p { margin: 0 0 15px; }
+  ul, ol { margin: 0 0 15px; padding-left: 1.2em; }
+  li { margin-bottom: 7px; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.1em 0.34em;
+    white-space: nowrap;
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--sunk);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 15px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; white-space: pre; }
+  .cmt { color: var(--faint); }
+  .hl { color: var(--accent); font-weight: 500; }
+
+  /* ---------- figures ---------- */
+  figure {
+    margin: 26px 0 30px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 22px 20px 16px;
+    overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; min-width: 540px; height: auto; color: var(--ink); }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    max-width: 74ch;
+  }
+  figcaption b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- tables ---------- */
+  .tw { overflow-x: auto; margin: 0 0 22px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 480px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--faint);
+    border-bottom: 1.5px solid var(--line);
+    padding: 0 14px 8px 0;
+    vertical-align: bottom;
+  }
+  td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  td.mono, th.mono, .num-col { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .tag.on { background: var(--accent-soft); color: var(--accent); }
+  .tag.off { background: var(--sunk); color: var(--muted); border: 1px solid var(--line); }
+  .tag.cost { background: var(--warn-soft); color: var(--warn); }
+  .tag.free { background: var(--good-soft); color: var(--good); }
+
+  /* ---------- callout ---------- */
+  .note {
+    border-left: 3px solid var(--warn);
+    background: var(--warn-soft);
+    padding: 14px 18px;
+    margin: 0 0 20px;
+    border-radius: 0 4px 4px 0;
+    max-width: 68ch;
+  }
+  .note p { margin: 0 0 8px; }
+  .note p:last-child { margin: 0; }
+  .note .lbl {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--warn);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  /* ---------- file cards ---------- */
+  .files { display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr)); gap: 14px; margin: 0 0 12px; }
+  .fcard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 15px 16px;
+  }
+  .fcard .fname { font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--accent); margin: 0 0 7px; word-break: break-all; }
+  .fcard .fq { font-family: var(--sans); font-size: 13.5px; line-height: 1.45; margin: 0; color: var(--ink); }
+  .fcard .fmeta { font-family: var(--sans); font-size: 11.5px; color: var(--faint); margin: 9px 0 0; }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+<div class="shell">
+
+<header class="masthead">
+  <p class="eyebrow">reasoning-from-scratch · ch06 · trials_14_grad_and_step.py</p>
+  <h1>Where Gradients Live</h1>
+  <p class="standfirst">One tutorial file, five parts, one toy expression. Who gets a <code>.grad</code>, how PyTorch builds the graph while your code runs, and what <strong>optimizer.step()</strong> actually reads when it fires.</p>
+</header>
+
+<nav class="index" aria-label="Section index">
+  <p class="rail-title">Contents</p>
+  <ol>
+    <li><a href="#file"><span class="num">00</span><span>The file</span></a></li>
+    <li><a href="#who"><span class="num">01</span><span>Who gets a .grad</span></a></li>
+    <li><a href="#build"><span class="num">02</span><span>How the graph is built</span></a></li>
+    <li><a href="#read"><span class="num">03</span><span>Reading it back</span></a></li>
+    <li><a href="#accum"><span class="num">04</span><span>.grad accumulates</span></a></li>
+    <li><a href="#step"><span class="num">05</span><span>What step() does</span></a></li>
+    <li><a href="#loop"><span class="num">06</span><span>Into the real loop</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================================================================= -->
+<section id="file">
+  <h2><span class="num">00</span><span>The file</span></h2>
+  <p class="sec-file">ch06/01_main-chapter-code/<b>trials_14_grad_and_step.py</b> · no model, no GPU, instant</p>
+
+  <p>Everything in this document comes from one expression, chosen so that every gradient is a number you already know:</p>
+
+<pre><code>x = torch.tensor([1., 2.])                     <span class="cmt"># input data</span>
+w = torch.tensor([3., 4.], requires_grad=True) <span class="cmt"># learnable</span>
+b = torch.tensor(0.5, requires_grad=True)      <span class="cmt"># learnable</span>
+
+tmp1 = w * x        <span class="cmt"># [3., 8.]</span>
+tmp2 = tmp1.sum()   <span class="cmt"># 11.0</span>
+tmp3 = tmp2 + b     <span class="cmt"># 11.5   -- this IS y</span>
+
+<span class="cmt"># dy/dw = x = [1., 2.]      dy/db = 1.0      dy/dx = w = [3., 4.]</span></code></pre>
+
+  <p>Writing it one operation at a time is the whole trick. <code>(w * x).sum() + b</code> on a single line hides two intermediate tensors that have their own identity, their own flags, and their own node in the graph. Give them names and every question below answers itself in the debugger.</p>
+
+  <div class="tw">
+  <table>
+    <tr><th>Part</th><th>Question</th><th>Line</th></tr>
+    <tr><td class="mono">1</td><td>Which tensors get a <code>.grad</code>, and why not the others?</td><td class="mono">:48</td></tr>
+    <tr><td class="mono">2</td><td>What graph did autograd build, and how do I walk it?</td><td class="mono">:133</td></tr>
+    <tr><td class="mono">3</td><td>Why does <code>zero_grad()</code> have to exist?</td><td class="mono">:180</td></tr>
+    <tr><td class="mono">4</td><td>What does <code>optimizer.step()</code> read and write?</td><td class="mono">:205</td></tr>
+    <tr><td class="mono">5</td><td>Where does gradient clipping fit?</td><td class="mono">:254</td></tr>
+  </table>
+  </div>
+
+<pre><code>python trials_14_grad_and_step.py</code></pre>
+</section>
+
+<!-- ================================================================= -->
+<section id="who">
+  <h2><span class="num">01</span><span>Who gets a .grad</span></h2>
+  <p class="sec-file">Part 1 · <b>trials_14_grad_and_step.py:48</b></p>
+
+  <p>Two conditions, both required. "Learnable" is not one of them — PyTorch has no concept of a parameter at this level.</p>
+
+<pre><code>  tensor             value  is_leaf  req_grad grad_fn                .grad
+  ------------------------------------------------------------------------
+  x             [1.0, 2.0]     True     False None                    None
+  <span class="hl">w             [3.0, 4.0]     True      True None              [1.0, 2.0]</span>
+  <span class="hl">b                    0.5     True      True None                     1.0</span>
+  tmp1          [3.0, 8.0]    False      True MulBackward0      [1.0, 1.0]
+  tmp2                11.0    False      True SumBackward0             1.0
+  tmp3 (=y)           11.5    False      True AddBackward0             1.0</code></pre>
+
+  <p>Read the columns in order and the structure falls out:</p>
+  <ul>
+    <li><strong><code>is_leaf</code></strong> splits the table in half. The three tensors <em>you typed</em> are leaves; the three that came out of an operation are not. "Leaf" just means nothing produced this.</li>
+    <li><strong><code>requires_grad</code></strong> is contagious forward. <code>x</code> is <code>False</code>, yet <code>tmp1 = w * x</code> is <code>True</code> — one operand requiring grad is enough, and once true it stays true downstream.</li>
+    <li><strong><code>grad_fn</code></strong> is the exact mirror of <code>is_leaf</code>. Leaves have <code>None</code>; non-leaves each carry the node that differentiates the op that made them.</li>
+    <li><strong><code>.grad</code></strong> is filled for <code>w</code> and <code>b</code> only.</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 780 336" role="img" aria-label="A two-by-two grid of is_leaf against requires_grad, showing that .grad is filled only for leaf tensors with requires_grad true, and that the non-leaf plus requires-grad-false cell cannot exist.">
+      <text x="250" y="22" text-anchor="middle" font-size="11.5" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--faint)">requires_grad = True</text>
+      <text x="570" y="22" text-anchor="middle" font-size="11.5" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--faint)">requires_grad = False</text>
+      <text x="52" y="112" text-anchor="middle" font-size="11.5" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--faint)" transform="rotate(-90 52 112)">is_leaf = True</text>
+      <text x="52" y="256" text-anchor="middle" font-size="11.5" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--faint)" transform="rotate(-90 52 256)">is_leaf = False</text>
+
+      <rect x="90" y="36" width="320" height="152" rx="5" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2"/>
+      <text x="108" y="62" font-size="14" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">.grad IS FILLED</text>
+      <text x="108" y="86" font-size="12" style="font-family:var(--sans)" fill="currentColor">the only cell backward writes to</text>
+      <text x="108" y="112" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">w, b</text>
+      <text x="108" y="130" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">model.parameters()</text>
+      <text x="108" y="148" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">any input with requires_grad=True</text>
+      <text x="108" y="172" font-size="11" font-style="italic" style="font-family:var(--sans);fill:var(--accent)">exactly what the optimizer updates</text>
+
+      <rect x="426" y="36" width="288" height="152" rx="5" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="444" y="62" font-size="14" font-weight="500" style="font-family:var(--mono);fill:var(--muted)">.grad = None</text>
+      <text x="444" y="86" font-size="12" style="font-family:var(--sans)" fill="currentColor">nobody asked for it</text>
+      <text x="444" y="112" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">x</text>
+      <text x="444" y="130" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">anything from .detach()</text>
+      <text x="444" y="148" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">every tensor made under no_grad</text>
+      <text x="444" y="172" font-size="11" font-style="italic" style="font-family:var(--sans);fill:var(--muted)">no node exists to store one</text>
+
+      <rect x="90" y="200" width="320" height="120" rx="5" style="fill:var(--surface);stroke:currentColor" stroke-width="1.4" stroke-dasharray="5 3"/>
+      <text x="108" y="226" font-size="14" font-weight="500" style="font-family:var(--mono)" fill="currentColor">.grad = None</text>
+      <text x="108" y="248" font-size="12" style="font-family:var(--sans)" fill="currentColor">computed, used, discarded instantly</text>
+      <text x="108" y="272" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">tmp1, tmp2, tmp3</text>
+      <text x="108" y="298" font-size="11" font-style="italic" style="font-family:var(--sans);fill:var(--accent)">.retain_grad() opts one back in</text>
+
+      <rect x="426" y="200" width="288" height="120" rx="5" style="fill:var(--sunk);stroke:var(--line)" stroke-dasharray="3 4"/>
+      <text x="570" y="242" text-anchor="middle" font-size="13" font-weight="600" style="font-family:var(--sans);fill:var(--faint)">CANNOT EXIST</text>
+      <text x="570" y="266" text-anchor="middle" font-size="11.5" style="font-family:var(--sans);fill:var(--faint)">non-leaf means a node produced it,</text>
+      <text x="570" y="282" text-anchor="middle" font-size="11.5" style="font-family:var(--sans);fill:var(--faint)">and nodes are only made when the</text>
+      <text x="570" y="298" text-anchor="middle" font-size="11.5" style="font-family:var(--sans);fill:var(--faint)">gradient is needed</text>
+    </svg>
+    <figcaption><b>Only one quadrant receives a gradient.</b> Operations performed under <code>no_grad</code> produce <em>leaf</em> tensors with no graph, which is why the top-right cell absorbs so much. The bottom-right is unreachable — section 02 shows why.</figcaption>
+  </figure>
+
+  <p>The tutorial settles the "learnable" question by running the toy a second time with <code>requires_grad=True</code> on the <em>input data</em>. <code>x2.grad</code> comes back as <code>[3.0, 4.0]</code>, which is <code>w</code>, because <code>dy/dx = w</code>. Input tensors get a gradient the moment you ask for one — the same mechanism behind adversarial examples and input-gradient saliency.</p>
+
+  <div class="note">
+    <span class="lbl">Those intermediate .grad values are borrowed</span>
+    <p><code>tmp1</code>, <code>tmp2</code> and <code>tmp3</code> only show a value because Part 1 calls <code>retain_grad()</code> on them first. Remove it and all three read <code>None</code> while <code>w.grad</code> is still correct. Their gradients <em>are</em> calculated — backward cannot reach <code>w</code> without them — but they are consumed by the chain rule and dropped in the same instant.</p>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<section id="build">
+  <h2><span class="num">02</span><span>How the graph is built</span></h2>
+  <p class="sec-file">Part 2 · <b>trials_14_grad_and_step.py:133</b></p>
+
+  <p>The usual confusion here comes from imagining a compiler: some pass that inspects your function and constructs a graph from it. That is not what happens. <strong>There is no build step.</strong> PyTorch records as it executes, one operation at a time, on the way <em>forward</em>.</p>
+
+  <p>Each op does four things:</p>
+  <ol>
+    <li>Computes its output, the ordinary numeric work.</li>
+    <li>If any input requires grad, allocates one backward <strong>node</strong>.</li>
+    <li>Fills that node's <code>next_functions</code> with references to <em>where each input came from</em>.</li>
+    <li>Hangs the node off the output tensor as its <code>.grad_fn</code>.</li>
+  </ol>
+
+  <p>So the graph grows from the bottom up while your code runs — and it can only ever point <em>backwards</em>, because at the moment a node is created the later operations have not happened yet. There is nothing forward to point at.</p>
+
+  <figure>
+    <svg viewBox="0 0 820 358" role="img" aria-label="Three panels showing the autograd graph growing one node per line of code: the multiply appends MulBackward0, the sum appends SumBackward0 pointing at it, and the addition appends AddBackward0 plus an AccumulateGrad for b.">
+      <defs>
+        <marker id="lft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <text x="24" y="20" font-size="11" font-weight="600" letter-spacing="0.09em" style="font-family:var(--sans);fill:var(--faint)">LINE THAT RAN</text>
+      <text x="250" y="20" font-size="11" font-weight="600" letter-spacing="0.09em" style="font-family:var(--sans);fill:var(--faint)">WHAT NOW EXISTS  ·  arrows are next_functions</text>
+
+      <!-- panel 1 -->
+      <text x="24" y="66" font-size="12.5" style="font-family:var(--mono)" fill="currentColor">tmp1 = w * x</text>
+      <text x="24" y="84" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">first op to touch w</text>
+
+      <rect x="250" y="44" width="150" height="38" rx="4" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="325" y="62" text-anchor="middle" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">AccumulateGrad</text>
+      <text x="325" y="76" text-anchor="middle" font-size="10" style="font-family:var(--mono);fill:var(--muted)">.variable is w</text>
+
+      <line x1="470" y1="63" x2="408" y2="63" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor"/>
+      <rect x="472" y="44" width="150" height="38" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2"/>
+      <text x="547" y="62" text-anchor="middle" font-size="11.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">MulBackward0</text>
+      <text x="547" y="76" text-anchor="middle" font-size="10" style="font-family:var(--sans);fill:var(--accent)">new</text>
+      <text x="640" y="60" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">tmp1.grad_fn</text>
+      <text x="640" y="76" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">slot [1] for x is None</text>
+
+      <line x1="24" y1="104" x2="796" y2="104" stroke-width="1" opacity="0.3" stroke="currentColor"/>
+
+      <!-- panel 2 -->
+      <text x="24" y="150" font-size="12.5" style="font-family:var(--mono)" fill="currentColor">tmp2 = tmp1.sum()</text>
+      <text x="24" y="168" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">input is a non-leaf</text>
+
+      <rect x="250" y="128" width="150" height="38" rx="4" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="325" y="151" text-anchor="middle" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">AccumulateGrad</text>
+      <line x1="470" y1="147" x2="408" y2="147" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor"/>
+      <rect x="472" y="128" width="150" height="38" rx="4" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="547" y="151" text-anchor="middle" font-size="11.5" style="font-family:var(--mono);fill:var(--muted)">MulBackward0</text>
+      <line x1="692" y1="147" x2="630" y2="147" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor"/>
+      <rect x="646" y="128" width="150" height="38" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2" transform="translate(48 0)"/>
+      <text x="769" y="146" text-anchor="middle" font-size="11.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">SumBackward0</text>
+      <text x="769" y="160" text-anchor="middle" font-size="10" style="font-family:var(--sans);fill:var(--accent)">new</text>
+
+      <line x1="24" y1="188" x2="796" y2="188" stroke-width="1" opacity="0.3" stroke="currentColor"/>
+
+      <!-- panel 3 -->
+      <text x="24" y="238" font-size="12.5" style="font-family:var(--mono)" fill="currentColor">tmp3 = tmp2 + b</text>
+      <text x="24" y="256" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">two inputs, so two slots</text>
+      <text x="24" y="272" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">b is a fresh leaf → its own</text>
+      <text x="24" y="286" font-size="10.5" style="font-family:var(--sans);fill:var(--muted)">AccumulateGrad appears now</text>
+
+      <rect x="250" y="216" width="126" height="34" rx="4" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="313" y="237" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">AccumulateGrad</text>
+      <line x1="428" y1="233" x2="384" y2="233" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor"/>
+      <rect x="430" y="216" width="126" height="34" rx="4" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="493" y="237" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">MulBackward0</text>
+      <line x1="608" y1="233" x2="564" y2="233" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor"/>
+      <rect x="610" y="216" width="126" height="34" rx="4" style="fill:var(--surface);stroke:var(--line)" stroke-width="1.4"/>
+      <text x="673" y="237" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">SumBackward0</text>
+
+      <path d="M 673 250 L 673 268 L 560 268 L 560 288" fill="none" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor" transform="translate(0 0)"/>
+      <rect x="610" y="288" width="126" height="34" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2"/>
+      <text x="673" y="309" text-anchor="middle" font-size="10.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AddBackward0</text>
+      <path d="M 610 305 L 500 305" fill="none" stroke-width="1.6" marker-end="url(#lft)" stroke="currentColor"/>
+      <rect x="366" y="288" width="132" height="34" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2"/>
+      <text x="432" y="304" text-anchor="middle" font-size="10.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AccumulateGrad</text>
+      <text x="432" y="317" text-anchor="middle" font-size="9.5" style="font-family:var(--mono);fill:var(--accent)">.variable is b</text>
+      <text x="752" y="305" font-size="10.5" style="font-family:var(--sans);fill:var(--accent)">new</text>
+      <text x="752" y="319" font-size="10.5" style="font-family:var(--sans);fill:var(--accent)">new</text>
+
+      <path d="M 673 268 L 673 250" fill="none" stroke-width="1.6" stroke="currentColor"/>
+      <text x="690" y="278" font-size="10" style="font-family:var(--mono);fill:var(--muted)">[0]</text>
+      <text x="540" y="298" font-size="10" style="font-family:var(--mono);fill:var(--muted)">[1]</text>
+
+      <text x="24" y="344" font-size="11.5" font-style="italic" style="font-family:var(--sans);fill:var(--muted)">Nothing was ever “compiled”. Each line appended one node and pointed it at what already existed.</text>
+    </svg>
+    <figcaption><b>The graph is a side effect of running forward, not a separate pass.</b> Each accented node is the one that line created. Because a node is built at the moment its op executes, the only things it can reference are the ones already made — which is why every edge runs backwards.</figcaption>
+  </figure>
+
+  <h3>The rule, in one line</h3>
+  <p>Once you see how a node is wired, the whole structure is mechanical. For a new node created by an op with inputs <code>i₀, i₁, …</code>:</p>
+
+<pre><code>next_functions[i] = <span class="hl">inputs[i].grad_fn</span>              <span class="cmt"># input i is a non-leaf</span>
+                  = <span class="hl">AccumulateGrad(inputs[i])</span>     <span class="cmt"># leaf that requires grad</span>
+                  = <span class="hl">None</span>                          <span class="cmt"># anything else</span></code></pre>
+
+  <p>That first case is literal identity, not resemblance. Part 2 checks it:</p>
+
+<pre><code>after tmp2 = tmp1.sum()
+  tmp2.grad_fn                        : SumBackward0
+  <span class="hl">next_functions[0] IS tmp1.grad_fn   : True</span>
+
+after tmp3 = tmp2 + b
+  tmp3.grad_fn                        : AddBackward0
+  <span class="hl">next_functions[0] IS tmp2.grad_fn   : True</span>
+  next_functions[1].variable is b     : True</code></pre>
+
+  <p>A new node does not describe the previous op — it <em>holds the same object</em>. That is what makes the chain a chain, and it is why the whole thing is freed the moment nothing references the final tensor.</p>
+</section>
+
+<!-- ================================================================= -->
+<section id="read">
+  <h2><span class="num">03</span><span>Reading it back</span></h2>
+  <p class="sec-file">Part 2 · <b>walk_graph</b> at <b>trials_14_grad_and_step.py:119</b></p>
+
+  <p>Laid flat, forward and backward are the same line-up walked in opposite directions. Each forward tensor sits directly above the node its operation created.</p>
+
+  <figure>
+    <svg viewBox="0 0 820 340" role="img" aria-label="Forward tensors along the top flowing left to right, and the mirrored backward nodes along the bottom flowing right to left, with gradient values labelled on each backward edge.">
+      <defs>
+        <marker id="fw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="bw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--accent)"/>
+        </marker>
+      </defs>
+
+      <text x="24" y="20" font-size="11.5" font-weight="600" letter-spacing="0.09em" style="font-family:var(--sans);fill:var(--muted)">FORWARD  →   you wrote this</text>
+
+      <!-- forward row -->
+      <rect x="30" y="36" width="76" height="30" rx="3" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="68" y="56" text-anchor="middle" font-size="12" style="font-family:var(--mono)" fill="currentColor">w</text>
+      <rect x="30" y="76" width="76" height="30" rx="3" style="fill:var(--sunk);stroke:var(--line)" stroke-width="1.3" stroke-dasharray="4 3"/>
+      <text x="68" y="96" text-anchor="middle" font-size="12" style="font-family:var(--mono);fill:var(--faint)">x</text>
+
+      <path d="M 110 51 L 150 51 L 150 66 L 186 66" fill="none" stroke-width="1.5" marker-end="url(#fw)" stroke="currentColor"/>
+      <path d="M 110 91 L 150 91 L 150 66" fill="none" stroke-width="1.5" stroke="currentColor"/>
+      <text x="150" y="40" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">*</text>
+
+      <rect x="188" y="50" width="96" height="32" rx="3" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="236" y="71" text-anchor="middle" font-size="12" style="font-family:var(--mono)" fill="currentColor">tmp1</text>
+
+      <path d="M 288 66 L 358 66" fill="none" stroke-width="1.5" marker-end="url(#fw)" stroke="currentColor"/>
+      <text x="323" y="58" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">.sum()</text>
+
+      <rect x="360" y="50" width="96" height="32" rx="3" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="408" y="71" text-anchor="middle" font-size="12" style="font-family:var(--mono)" fill="currentColor">tmp2</text>
+
+      <rect x="360" y="96" width="96" height="30" rx="3" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="408" y="116" text-anchor="middle" font-size="12" style="font-family:var(--mono)" fill="currentColor">b</text>
+
+      <path d="M 460 66 L 520 66 L 520 66 L 556 66" fill="none" stroke-width="1.5" marker-end="url(#fw)" stroke="currentColor"/>
+      <path d="M 460 111 L 520 111 L 520 66" fill="none" stroke-width="1.5" stroke="currentColor"/>
+      <text x="520" y="52" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--muted)">+</text>
+
+      <rect x="558" y="50" width="110" height="32" rx="3" style="fill:var(--surface);stroke:currentColor" stroke-width="1.8"/>
+      <text x="613" y="71" text-anchor="middle" font-size="12" font-weight="600" style="font-family:var(--mono)" fill="currentColor">tmp3</text>
+
+      <!-- mirror connectors -->
+      <g stroke-width="1" stroke-dasharray="3 4" opacity="0.5" stroke="currentColor">
+        <line x1="236" y1="86" x2="236" y2="196"/>
+        <line x1="408" y1="86" x2="408" y2="196"/>
+        <line x1="613" y1="86" x2="613" y2="196"/>
+        <line x1="68" y1="70" x2="68" y2="196"/>
+      </g>
+      <text x="700" y="140" font-size="10.5" font-style="italic" style="font-family:var(--sans);fill:var(--faint)">each node sits under</text>
+      <text x="700" y="154" font-size="10.5" font-style="italic" style="font-family:var(--sans);fill:var(--faint)">the tensor it produced</text>
+
+      <!-- backward row -->
+      <text x="24" y="188" font-size="11.5" font-weight="600" letter-spacing="0.09em" style="font-family:var(--sans);fill:var(--accent)">BACKWARD  ←   autograd built this</text>
+
+      <rect x="16" y="198" width="104" height="40" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.8"/>
+      <text x="68" y="215" text-anchor="middle" font-size="10.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AccumulateGrad</text>
+      <text x="68" y="230" text-anchor="middle" font-size="10" style="font-family:var(--mono);fill:var(--accent)">w</text>
+
+      <rect x="184" y="198" width="104" height="40" rx="4" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="236" y="222" text-anchor="middle" font-size="10.5" style="font-family:var(--mono)" fill="currentColor">MulBackward0</text>
+
+      <rect x="356" y="198" width="104" height="40" rx="4" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="408" y="222" text-anchor="middle" font-size="10.5" style="font-family:var(--mono)" fill="currentColor">SumBackward0</text>
+
+      <rect x="560" y="198" width="106" height="40" rx="4" style="fill:var(--surface);stroke:currentColor" stroke-width="1.5"/>
+      <text x="613" y="222" text-anchor="middle" font-size="10.5" style="font-family:var(--mono)" fill="currentColor">AddBackward0</text>
+
+      <!-- backward arrows, right to left -->
+      <path d="M 556 218 L 466 218" fill="none" stroke-width="1.8" marker-end="url(#bw)" style="stroke:var(--accent)"/>
+      <text x="511" y="210" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--accent)">1.0</text>
+      <path d="M 352 218 L 294 218" fill="none" stroke-width="1.8" marker-end="url(#bw)" style="stroke:var(--accent)"/>
+      <text x="323" y="210" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--accent)">[1,1]</text>
+      <path d="M 180 218 L 126 218" fill="none" stroke-width="1.8" marker-end="url(#bw)" style="stroke:var(--accent)"/>
+      <text x="153" y="210" text-anchor="middle" font-size="10.5" style="font-family:var(--mono);fill:var(--accent)">[1,2]</text>
+
+      <path d="M 720 218 L 672 218" fill="none" stroke-width="1.8" marker-end="url(#bw)" style="stroke:var(--accent)"/>
+      <text x="724" y="214" font-size="10.5" style="font-family:var(--mono);fill:var(--accent)">1.0</text>
+      <text x="724" y="228" font-size="10" style="font-family:var(--sans);fill:var(--muted)">seed</text>
+
+      <!-- branches down -->
+      <path d="M 613 240 L 613 262 L 470 262 L 470 278" fill="none" stroke-width="1.8" marker-end="url(#bw)" style="stroke:var(--accent)"/>
+      <text x="545" y="256" text-anchor="middle" font-size="10" style="font-family:var(--mono);fill:var(--muted)">[1] b · 1.0</text>
+      <rect x="416" y="280" width="108" height="38" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.8"/>
+      <text x="470" y="297" text-anchor="middle" font-size="10.5" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">AccumulateGrad</text>
+      <text x="470" y="311" text-anchor="middle" font-size="10" style="font-family:var(--mono);fill:var(--accent)">b</text>
+
+      <path d="M 236 240 L 236 262 L 300 262 L 300 278" fill="none" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#fw)" stroke="currentColor"/>
+      <text x="300" y="256" text-anchor="middle" font-size="10" style="font-family:var(--mono);fill:var(--faint)">[1] x</text>
+      <rect x="256" y="280" width="88" height="30" rx="4" style="fill:var(--sunk);stroke:var(--line)" stroke-width="1.3" stroke-dasharray="3 4"/>
+      <text x="300" y="300" text-anchor="middle" font-size="11" font-weight="600" style="font-family:var(--mono);fill:var(--faint)">None</text>
+
+      <text x="68" y="262" text-anchor="middle" font-size="11" font-weight="600" style="font-family:var(--mono);fill:var(--accent)">w.grad</text>
+      <text x="68" y="277" text-anchor="middle" font-size="11" style="font-family:var(--mono);fill:var(--accent)">[1.0, 2.0]</text>
+      <text x="470" y="334" text-anchor="middle" font-size="11" style="font-family:var(--mono);fill:var(--accent)">b.grad = 1.0</text>
+      <text x="300" y="330" text-anchor="middle" font-size="10" style="font-family:var(--sans);fill:var(--faint)">x.grad stays None</text>
+    </svg>
+    <figcaption><b>Same line-up, opposite direction.</b> Forward arrows carry values left to right; backward arrows carry gradients right to left, labelled with what each edge actually transports. The two <code>AccumulateGrad</code> boxes are the only exits from the graph — count them and you have counted the tensors that end up with a <code>.grad</code>.</figcaption>
+  </figure>
+
+  <p><code>walk_graph</code> prints the same structure as an indented tree, which is what the recursion naturally produces:</p>
+
+<pre><code>AddBackward0
+  next_functions[0] = SumBackward0
+    SumBackward0
+      next_functions[0] = MulBackward0
+        MulBackward0
+          next_functions[0] = AccumulateGrad
+            AccumulateGrad   -> writes .grad of the leaf [3.0, 4.0]
+          <span class="hl">next_functions[1] = None   (input needs no gradient)</span>
+  next_functions[1] = AccumulateGrad
+    AccumulateGrad   -> writes .grad of the leaf 0.5</code></pre>
+
+  <h3>Three things worth pinning down</h3>
+  <ul>
+    <li><strong><code>next_functions</code> is badly named.</strong> It is not "the next operation" — it is <em>where do I hand my gradient next</em>. The name describes the backward walk, not the forward one.</li>
+    <li><strong>The tuple is positional.</strong> <code>next_functions[i]</code> belongs to input <em>i</em> of the forward op, which is why <code>MulBackward0</code> has two slots even though only one leads anywhere. A <code>None</code> slot is a real entry, not an absence — printing that filters Nones will make <code>MulBackward0</code> look like it has one input.</li>
+    <li><strong><code>AccumulateGrad</code> is where <code>.grad</code> is written.</strong> It holds the real tensor in <code>.variable</code> and performs <code>p.grad += incoming</code>. That <code>+=</code> lives here, in the graph — not in the optimizer. Which is exactly the behaviour section 04 is about.</li>
+  </ul>
+
+  <p>The <code>None</code> under <code>MulBackward0</code> also closes the loop on the empty quadrant in section 01. No node was ever created for <code>x</code>, so its gradient is not computed-then-discarded — the graph simply has no path to it. That is what makes <code>requires_grad=False</code> a genuine compute saving rather than just a flag.</p>
+</section>
+
+<!-- ================================================================= -->
+<section id="accum">
+  <h2><span class="num">04</span><span>.grad accumulates</span></h2>
+  <p class="sec-file">Part 3 · <b>trials_14_grad_and_step.py:180</b></p>
+
+  <p><code>backward()</code> does <code>p.grad += new</code>, not <code>p.grad = new</code> — that is the <code>AccumulateGrad</code> node doing its job. Calling backward three times on the same graph:</p>
+
+<pre><code>before any backward : None
+after backward #1   : [1.0, 2.0]
+after backward #2   : [2.0, 4.0]
+after backward #3   : [3.0, 6.0]
+after w.grad = None : None</code></pre>
+
+  <p>This is deliberate: it lets you split a large batch across several backward calls and have the gradients add up correctly. The report on <a href="https://claude.ai/code/artifact/703a214d-ae83-4254-8ab7-974ae099dd78">Two Ways to Backward</a> covers a case where that is exactly the point.</p>
+
+  <p>The cost is that a forgotten <code>zero_grad()</code> does not raise anything. It silently trains on the sum of this step's gradient and every previous one — a bug that shows up as mysteriously unstable training, not as an error.</p>
+</section>
+
+<!-- ================================================================= -->
+<section id="step">
+  <h2><span class="num">05</span><span>What step() does</span></h2>
+  <p class="sec-file">Part 4 · <b>trials_14_grad_and_step.py:205</b> · Part 5 · <b>:254</b></p>
+
+  <p>Less than you would think. The optimizer holds references to the very same tensor objects — <code>optimizer.param_groups[0]['params'][0] is w</code> returns <code>True</code> — and it never touches the graph at all. It reads <code>p.grad</code>, writes <code>p.data</code>. For plain SGD the update is reproducible by hand, exactly:</p>
+
+<pre><code>w before step : [3.0, 4.0]
+w.grad        : [1.0, 2.0]
+w after step  : [2.9000000953674316, 3.799999952316284]
+w - lr*w.grad : [2.9000000953674316, 3.799999952316284]   <span class="cmt">← identical</span></code></pre>
+
+  <p>Two details that catch people:</p>
+  <ul>
+    <li><strong><code>step()</code> does not clear <code>.grad</code>.</strong> After stepping, <code>w.grad</code> is still <code>[1.0, 2.0]</code>. Clearing is a separate call, which is why <code>zero_grad()</code> opens the next iteration rather than closing this one.</li>
+    <li><strong>AdamW is not <code>lr · grad</code>.</strong> Part 4 prints its state — <code>exp_avg</code>, <code>exp_avg_sq</code>, <code>step</code> — running averages the optimizer owns. But <code>.grad</code> is still its only input from the graph; everything else is the optimizer's own memory.</li>
+  </ul>
+
+  <h3>Clipping sits in between</h3>
+  <p><code>clip_grad_norm_</code> rewrites <code>.grad</code> <strong>in place</strong>, after backward has filled it and before the optimizer reads it. Part 5 takes a gradient of norm 50 down to norm 1:</p>
+
+<pre><code>.grad before clip : [30.0, 40.0]  norm=50.00
+.grad after clip  : [0.6, 0.8]    norm=1.00</code></pre>
+
+  <p>Direction preserved, magnitude capped. In RLVR this is not boilerplate — advantages come from <code>(r − mean) / (std + 1e-4)</code>, and when almost every rollout scores zero and one gets lucky, that <code>1e-4</code> floor is the only thing between you and an enormous update.</p>
+</section>
+
+<!-- ================================================================= -->
+<section id="loop">
+  <h2><span class="num">06</span><span>Into the real loop</span></h2>
+  <p class="sec-file">the same four calls, at <b>trials_00.py:266, 291, 297, 300</b></p>
+
+  <figure>
+    <svg viewBox="0 0 820 250" role="img" aria-label="Timeline of the four calls in a training step and the value of a parameter's grad after each: cleared to None, filled by backward, rescaled in place by clipping, then read but not cleared by the optimizer step.">
+      <defs>
+        <marker id="tl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <line x1="40" y1="70" x2="784" y2="70" stroke-width="1.4" marker-end="url(#tl)" stroke="currentColor"/>
+
+      <g font-size="11.5" text-anchor="middle" style="font-family:var(--mono)">
+        <circle cx="96" cy="70" r="5" style="fill:var(--ground);stroke:currentColor" stroke-width="1.8"/>
+        <text x="96" y="46" fill="currentColor">zero_grad()</text>
+        <text x="96" y="30" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">:266</text>
+
+        <circle cx="288" cy="70" r="5" style="fill:var(--accent);stroke:var(--accent)" stroke-width="1.8"/>
+        <text x="288" y="46" style="fill:var(--accent)">backward()</text>
+        <text x="288" y="30" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">:291</text>
+
+        <circle cx="500" cy="70" r="5" style="fill:var(--warn);stroke:var(--warn)" stroke-width="1.8"/>
+        <text x="500" y="46" style="fill:var(--warn)">clip_grad_norm_(1.0)</text>
+        <text x="500" y="30" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">:297</text>
+
+        <circle cx="700" cy="70" r="5" style="fill:var(--good);stroke:var(--good)" stroke-width="1.8"/>
+        <text x="700" y="46" style="fill:var(--good)">step()</text>
+        <text x="700" y="30" font-size="10.5" style="font-family:var(--sans);fill:var(--faint)">:300</text>
+      </g>
+
+      <g font-size="11" text-anchor="middle" style="font-family:var(--sans);fill:var(--muted)">
+        <text x="96" y="98">clears</text>
+        <text x="288" y="98">writes  +=</text>
+        <text x="500" y="98">rescales in place</text>
+        <text x="700" y="98">reads only</text>
+      </g>
+
+      <rect x="40" y="118" width="744" height="1" style="fill:var(--line)"/>
+      <text x="40" y="140" font-size="11" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--faint)">w.grad AFTER EACH CALL</text>
+
+      <g font-size="12.5" text-anchor="middle" style="font-family:var(--mono)">
+        <text x="96" y="168" style="fill:var(--muted)">None</text>
+        <text x="288" y="168" style="fill:var(--accent)">[1.0, 2.0]</text>
+        <text x="500" y="168" style="fill:var(--warn)">[0.6, 0.8]</text>
+        <text x="700" y="168" style="fill:var(--good)">[0.6, 0.8]</text>
+      </g>
+      <text x="700" y="186" text-anchor="middle" font-size="10.5" font-style="italic" style="font-family:var(--sans);fill:var(--good)">unchanged — step() does not clear</text>
+
+      <rect x="40" y="200" width="744" height="1" style="fill:var(--line)"/>
+      <text x="40" y="222" font-size="11" font-weight="600" letter-spacing="0.08em" style="font-family:var(--sans);fill:var(--faint)">w.data</text>
+      <g font-size="12.5" text-anchor="middle" style="font-family:var(--mono)">
+        <text x="96" y="242" style="fill:var(--muted)">[3.0, 4.0]</text>
+        <text x="288" y="242" style="fill:var(--muted)">[3.0, 4.0]</text>
+        <text x="500" y="242" style="fill:var(--muted)">[3.0, 4.0]</text>
+        <text x="700" y="242" style="fill:var(--good)">updated</text>
+      </g>
+    </svg>
+    <figcaption><b>Only the last call changes a weight.</b> Everything the toy demonstrates transfers unchanged to the RLVR loop — the tensors are larger, the sequence is identical.</figcaption>
+  </figure>
+
+  <div class="tw">
+  <table>
+    <tr><th>trials_14</th><th>trials_00.py</th><th>What carries over</th></tr>
+    <tr><td class="mono">Part 1 · :48</td><td class="mono">:249</td><td><code>model.parameters()</code> is the leaf-plus-requires-grad set AdamW is handed</td></tr>
+    <tr><td class="mono">Part 2 · :133</td><td class="mono">:180</td><td><code>logps</code> is a non-leaf; its <code>.grad</code> stays <code>None</code> and that is correct</td></tr>
+    <tr><td class="mono">Part 3 · :180</td><td class="mono">:266</td><td><code>zero_grad()</code> must open every step, for the reason Part 3 shows</td></tr>
+    <tr><td class="mono">Part 4 · :205</td><td class="mono">:300</td><td><code>step()</code> reads <code>.grad</code>, writes <code>.data</code>, clears nothing</td></tr>
+    <tr><td class="mono">Part 5 · :254</td><td class="mono">:297</td><td>clipping rewrites <code>.grad</code> before the optimizer sees it</td></tr>
+  </table>
+  </div>
+
+  <h3>Sibling reports</h3>
+  <p>This file answers "where do gradients live". Its neighbours answer different questions from the same directory:</p>
+  <ul>
+    <li><strong>Where Activations Live</strong> — <code>trials_12_activations.py</code>: what the forward pass retains, and why generation cannot keep its graph.</li>
+    <li><strong><a href="https://claude.ai/code/artifact/703a214d-ae83-4254-8ab7-974ae099dd78">Two Ways to Backward</a></strong> — one backward over stacked logprobs versus N per-rollout backwards, and what each costs.</li>
+    <li><code>trials_13_shift_by_one.py</code> — the shift-by-one and the prompt mask in <code>sequence_logprob</code>. No report yet.</li>
+  </ul>
+</section>
+
+</main>
+</div>

@@ -1,0 +1,1280 @@
+<title>Where Activations Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap">
+
+<style>
+:root{
+  --paper:#EEF1F2; --surface:#FAFCFC; --raised:#E4E9EB;
+  --ink:#12222A; --ink-2:#38505A; --muted:#5C6E76;
+  --rule:#D3DCE0; --rule-soft:#E2E8EA;
+  --carmine:#C81D5A; --carmine-wash:#FBE7EE;
+  --petrol:#0B7A9C; --petrol-wash:#E2EFF4;
+  --code-bg:#E7ECEE;
+  --shadow:0 1px 2px rgba(18,34,42,.06), 0 8px 28px -18px rgba(18,34,42,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#101A1F; --surface:#18242A; --raised:#1F2E35;
+    --ink:#DCE6E9; --ink-2:#B4C6CC; --muted:#8AA0A8;
+    --rule:#28383F; --rule-soft:#20302F;
+    --carmine:#F0508A; --carmine-wash:#33161F;
+    --petrol:#2C9FC6; --petrol-wash:#122831;
+    --code-bg:#1C2A31;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101A1F; --surface:#18242A; --raised:#1F2E35;
+  --ink:#DCE6E9; --ink-2:#B4C6CC; --muted:#8AA0A8;
+  --rule:#28383F; --rule-soft:#20302F;
+  --carmine:#F0508A; --carmine-wash:#33161F;
+  --petrol:#2C9FC6; --petrol-wash:#122831;
+  --code-bg:#1C2A31;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Newsreader",Georgia,"Times New Roman",serif;
+  font-size:17.5px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* ---------- shell ---------- */
+.shell{display:grid; grid-template-columns:1fr; max-width:1180px; margin:0 auto; padding:0 22px 120px}
+@media (min-width:1120px){
+  .shell{grid-template-columns:186px minmax(0,1fr); gap:52px; padding-right:34px}
+}
+.rail{display:none}
+@media (min-width:1120px){
+  .rail{display:block; position:sticky; top:0; align-self:start; height:100vh; padding-top:54px}
+}
+.rail ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px}
+.rail a{
+  display:flex; gap:9px; align-items:baseline; text-decoration:none; color:var(--muted);
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.02em;
+  padding:5px 8px; border-left:2px solid transparent; border-radius:0 3px 3px 0;
+}
+.rail a:hover,.rail a:focus-visible{color:var(--ink); background:var(--raised); border-left-color:var(--carmine); outline:none}
+.rail .n{color:var(--carmine); font-weight:600; min-width:20px}
+.rail .grp{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--muted); opacity:.65; margin:20px 0 7px 10px;
+}
+
+main{min-width:0; max-width:1000px}
+
+/* ---------- masthead ---------- */
+.mast{padding:56px 0 34px; border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--carmine); font-weight:600; margin:0 0 18px;
+}
+h1{
+  font-family:"Archivo",system-ui,sans-serif; font-weight:700; font-size:clamp(2.5rem,6.4vw,4.3rem);
+  line-height:.98; letter-spacing:-.035em; margin:0; text-wrap:balance;
+}
+.deck{
+  font-size:1.2rem; line-height:1.5; color:var(--ink-2); max-width:38em; margin:20px 0 0;
+  font-weight:400;
+}
+.stamp{
+  display:flex; flex-wrap:wrap; gap:8px 26px; margin-top:28px;
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);
+}
+.stamp b{font-weight:500; color:var(--ink-2)}
+
+/* ---------- sections ---------- */
+section{padding-top:66px; scroll-margin-top:22px}
+.tag{
+  display:inline-flex; align-items:center; gap:8px; margin-bottom:14px;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.17em; text-transform:uppercase;
+  color:var(--muted);
+}
+.tag::before{content:""; width:22px; height:2px; background:var(--carmine)}
+h2{
+  font-family:"Archivo",system-ui,sans-serif; font-weight:600; font-size:clamp(1.75rem,3.4vw,2.5rem);
+  line-height:1.05; letter-spacing:-.028em; margin:0 0 16px; text-wrap:balance;
+}
+h3{
+  font-family:"Archivo",system-ui,sans-serif; font-weight:600; font-size:1.16rem;
+  letter-spacing:-.012em; margin:44px 0 12px;
+}
+h4{
+  font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--muted); margin:30px 0 10px;
+}
+p{margin:0 0 18px; max-width:68ch}
+ul,ol{max-width:66ch; padding-left:1.15em; margin:0 0 18px}
+li{margin-bottom:8px}
+strong{font-weight:600; color:var(--ink)}
+em{font-style:italic}
+a{color:var(--petrol)}
+code{
+  font-family:"IBM Plex Mono",monospace; font-size:.855em; background:var(--code-bg);
+  padding:.1em .34em; border-radius:3px; color:var(--ink);
+}
+.hl-hot{color:var(--carmine); font-weight:600}
+.hl-cool{color:var(--petrol); font-weight:600}
+
+/* ---------- question callout ---------- */
+.q{
+  background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--carmine);
+  border-radius:2px 6px 6px 2px; padding:20px 24px; margin:0 0 30px; max-width:72ch; box-shadow:var(--shadow);
+}
+.q .lbl{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--carmine); font-weight:600; display:block; margin-bottom:8px;
+}
+.q p{margin:0; font-size:1.06rem; font-style:italic; color:var(--ink-2)}
+.answer{
+  background:var(--petrol-wash); border:1px solid var(--rule); border-left:3px solid var(--petrol);
+  border-radius:2px 6px 6px 2px; padding:20px 24px; margin:26px 0 30px; max-width:72ch;
+}
+.answer .lbl{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--petrol); font-weight:600; display:block; margin-bottom:8px;
+}
+.answer p{margin:0}
+.answer p + p{margin-top:12px}
+
+/* ---------- figures ---------- */
+figure{margin:34px 0; padding:0}
+.figbox{
+  background:var(--surface); border:1px solid var(--rule); border-radius:7px;
+  padding:22px 18px 14px; overflow-x:auto; box-shadow:var(--shadow);
+}
+figure svg{display:block; width:100%; height:auto; min-width:0}
+.figbox > svg{min-width:560px}
+figcaption{
+  margin-top:13px; font-size:.9rem; line-height:1.5; color:var(--muted); max-width:70ch;
+}
+figcaption b{color:var(--ink-2); font-weight:600}
+
+/* svg semantic classes */
+.s-node{fill:var(--surface); stroke:currentColor; stroke-width:1.4}
+.s-fill{fill:var(--raised); stroke:var(--rule); stroke-width:1}
+.s-lbl{font-family:"IBM Plex Mono",monospace; font-size:11.5px; fill:currentColor}
+.s-lbl-s{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--muted)}
+.s-ttl{font-family:"Archivo",sans-serif; font-size:12.5px; font-weight:600; fill:currentColor; letter-spacing:.01em}
+.s-hot{color:var(--carmine)}
+.s-cool{color:var(--petrol)}
+.hotfill{fill:var(--carmine)}
+.hotstroke{stroke:var(--carmine); fill:none}
+.coolfill{fill:var(--petrol)}
+.coolstroke{stroke:var(--petrol); fill:none}
+.dash{stroke-dasharray:5 4}
+.line{stroke:currentColor; fill:none; stroke-width:1.4}
+.thin{stroke:var(--rule); stroke-width:1; fill:none}
+
+/* ---------- tables ---------- */
+.tblwrap{overflow-x:auto; margin:26px 0; border:1px solid var(--rule); border-radius:7px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-family:"IBM Plex Mono",monospace; font-size:12.5px}
+th{
+  text-align:left; font-weight:600; font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--muted); padding:12px 15px; border-bottom:1px solid var(--rule); white-space:nowrap;
+}
+td{padding:10px 15px; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+tfoot td{border-top:1px solid var(--rule); font-weight:600; background:var(--raised)}
+.dim{color:var(--muted)}
+
+/* ---------- code block ---------- */
+pre{
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.6;
+  background:var(--surface); border:1px solid var(--rule); border-radius:7px;
+  padding:16px 18px; overflow-x:auto; margin:24px 0; color:var(--ink-2);
+}
+pre code{background:none; padding:0; font-size:inherit}
+pre .c{color:var(--muted)}
+pre .k{color:var(--carmine)}
+pre .g{color:var(--petrol)}
+
+/* ---------- rule cards (backward formulas) ---------- */
+.rules{display:grid; gap:12px; margin:24px 0; max-width:74ch}
+.rule{
+  display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,190px); align-items:center; gap:14px;
+  background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:14px 18px;
+}
+@media (max-width:640px){ .rule{grid-template-columns:1fr; gap:6px} .rule .arw{display:none} }
+.rule .eq{font-family:"IBM Plex Mono",monospace; font-size:13px}
+.rule .arw{color:var(--muted); font-size:14px}
+.rule .slot{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--carmine); font-weight:600}
+
+/* ---------- stat strip ---------- */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1px; background:var(--rule);
+  border:1px solid var(--rule); border-radius:7px; overflow:hidden; margin:28px 0}
+.stat{background:var(--surface); padding:17px 19px}
+.stat .k{font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:7px}
+.stat .v{font-family:"Archivo",sans-serif; font-size:1.65rem; font-weight:700; letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums; display:block}
+.stat .u{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted); display:block; margin-top:7px}
+.stat.hot .v{color:var(--carmine)}
+.stat.cool .v{color:var(--petrol)}
+
+/* ---------- chart ---------- */
+.chart{position:relative}
+.chart svg{display:block; width:100%; height:auto; min-width:520px; overflow:visible}
+.ax{stroke:var(--rule); stroke-width:1; fill:none}
+.grid{stroke:var(--rule-soft); stroke-width:1; fill:none}
+.tick{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--muted)}
+.axlbl{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.13em; text-transform:uppercase; fill:var(--muted)}
+.ser-inc{stroke:var(--carmine); fill:none; stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+.ser-seq{stroke:var(--petrol); fill:none; stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+.ser-ratio{stroke:var(--carmine); fill:none; stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+.dlab{font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:500}
+.legend{display:flex; flex-wrap:wrap; gap:20px; margin:0 0 14px; padding:0 2px}
+.legend span{display:flex; align-items:center; gap:8px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-2)}
+.swatch{width:15px; height:3px; border-radius:2px; flex:none}
+.tip{
+  position:absolute; pointer-events:none; opacity:0; transition:opacity .11s;
+  background:var(--surface); border:1px solid var(--rule); border-radius:5px; padding:8px 11px;
+  font-family:"IBM Plex Mono",monospace; font-size:11px; line-height:1.5; color:var(--ink);
+  box-shadow:var(--shadow); white-space:nowrap; z-index:5; transform:translate(-50%,-118%);
+}
+.tip.on{opacity:1}
+.tip .th{color:var(--muted); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:5px}
+.tip i{font-style:normal; display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px}
+@media (prefers-reduced-motion:reduce){ .tip{transition:none} }
+
+hr.sep{border:none; border-top:1px solid var(--rule); margin:60px 0 0}
+.foot{margin-top:70px; padding-top:26px; border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); line-height:1.8}
+</style>
+
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;overflow:hidden">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="ar-hot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C81D5A"/>
+    </marker>
+    <marker id="ar-cool" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0B7A9C"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="shell">
+
+<nav class="rail" aria-label="Contents">
+  <div class="grp">Contents</div>
+  <ol>
+    <li><a href="#map"><span class="n">00</span><span>The map</span></a></li>
+    <li><a href="#probe"><span class="n">01</span><span>The instrument</span></a></li>
+  </ol>
+  <div class="grp">Part 1</div>
+  <ol>
+    <li><a href="#addr"><span class="n">Q1</span><span>Where q and k live</span></a></li>
+    <li><a href="#why"><span class="n">02</span><span>Why those two</span></a></li>
+    <li><a href="#table1"><span class="n">03</span><span>What each op saves</span></a></li>
+    <li><a href="#life"><span class="n">04</span><span>Lifetime</span></a></li>
+  </ol>
+  <div class="grp">Part 2</div>
+  <ol>
+    <li><a href="#ledger2"><span class="n">05</span><span>30.25 MiB itemized</span></a></li>
+  </ol>
+  <div class="grp">Part 3</div>
+  <ol>
+    <li><a href="#blowup"><span class="n">Q3</span><span>Why one blew up</span></a></li>
+    <li><a href="#triangle"><span class="n">06</span><span>The triangle</span></a></li>
+    <li><a href="#quad"><span class="n">Q2</span><span>Both quadratic</span></a></li>
+    <li><a href="#payoff"><span class="n">07</span><span>The payoff</span></a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="mast">
+  <p class="eyebrow">trials_12_activations.py &nbsp;·&nbsp; reading notes</p>
+  <h1>Where Activations Live</h1>
+  <p class="deck">A tensor that autograd &ldquo;saves&rdquo; is not stored anywhere new. It is pinned exactly where it already was &mdash; and following that pin is the whole story of why grad-enabled generation costs 28&nbsp;GiB at 512 tokens.</p>
+  <div class="stamp">
+    <span><b>source</b> ch06/01_main-chapter-code/trials_12_activations.py</span>
+    <span><b>torch</b> CPU, float32 toys</span>
+    <span><b>numbers</b> measured, not estimated</span>
+  </div>
+</header>
+
+<!-- ================= 00 MAP ================= -->
+<section id="map">
+  <p class="tag">00 — Orientation</p>
+  <h2>What the script is actually teaching</h2>
+  <p>Three parts, one instrument, one conclusion. Each part answers a single question, and each question is a prerequisite for the next. The script is not three demos &mdash; it is one argument in three moves.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 330" role="img" aria-label="Map of the script: a shared retained_bytes probe feeds three parts, which build to the conclusion that generation must run under no_grad">
+
+        <!-- instrument -->
+        <rect class="s-node s-cool" x="20" y="128" width="126" height="70" rx="5"/>
+        <text class="s-lbl s-cool" x="83" y="152" text-anchor="middle">retained_bytes()</text>
+        <text class="s-lbl-s" x="83" y="169" text-anchor="middle">walks grad_fn,</text>
+        <text class="s-lbl-s" x="83" y="183" text-anchor="middle">sums _saved_* bytes</text>
+        <text class="s-lbl-s" x="83" y="118" text-anchor="middle">the shared instrument</text>
+
+        <!-- three parts -->
+        <g>
+          <rect class="s-node" x="222" y="24" width="300" height="76" rx="5"/>
+          <text class="s-ttl" x="240" y="48">PART 1 &nbsp;·&nbsp; one matmul</text>
+          <text class="s-lbl-s" x="240" y="68">“what does a node hold, and where?”</text>
+          <text class="s-lbl-s" x="240" y="85">y = q @ k.T  →  _saved_self, _saved_mat2</text>
+        </g>
+        <g>
+          <rect class="s-node" x="222" y="127" width="300" height="76" rx="5"/>
+          <text class="s-ttl" x="240" y="151">PART 2 &nbsp;·&nbsp; eight layers</text>
+          <text class="s-lbl-s" x="240" y="171">“what does it cost, in bytes?”</text>
+          <text class="s-lbl-s" x="240" y="188">30.25 MiB on &nbsp;·&nbsp; 0.00 MiB off</text>
+        </g>
+        <g>
+          <rect class="s-node s-hot" x="222" y="230" width="300" height="76" rx="5"/>
+          <text class="s-ttl s-hot" x="240" y="254">PART 3 &nbsp;·&nbsp; the KV cache</text>
+          <text class="s-lbl-s" x="240" y="274">“why does the cost become unpayable?”</text>
+          <text class="s-lbl-s" x="240" y="291">step t pins a length-t buffer  →  T²/2</text>
+        </g>
+
+        <!-- conclusion -->
+        <rect class="s-node s-cool" x="612" y="112" width="348" height="102" rx="5"/>
+        <text class="s-ttl s-cool" x="632" y="140">The conclusion</text>
+        <text class="s-lbl-s" x="632" y="162">generate under @torch.no_grad()</text>
+        <text class="s-lbl-s" x="632" y="179">then recompute the logprob in ONE</text>
+        <text class="s-lbl-s" x="632" y="196">teacher-forced pass — sequence_logprob()</text>
+
+        <!-- arrows -->
+        <g class="line">
+          <path d="M146,152 C182,152 182,62 218,62" marker-end="url(#ar)"/>
+          <path d="M146,163 L218,164" marker-end="url(#ar)"/>
+          <path d="M146,174 C182,174 182,268 218,268" marker-end="url(#ar)"/>
+        </g>
+        <g stroke-width="1.4" fill="none">
+          <path class="thin" d="M522,62 C560,62 560,140 606,140"/>
+          <path class="thin" d="M522,165 L606,163"/>
+          <path d="M522,268 C566,268 566,190 606,190" stroke="var(--carmine)" marker-end="url(#ar-hot)"/>
+        </g>
+        <text class="s-lbl-s s-hot" x="614" y="236" fill="var(--carmine)">forces the design</text>
+      </svg>
+    </div>
+    <figcaption><b>The argument.</b> Part 1 establishes <em>what</em> a saved tensor is; Part 2 prices it; Part 3 shows the price becoming quadratic under KV-cached decoding. Only the third arrow actually forces the API design — the first two exist to make it legible.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 01 PROBE ================= -->
+<section id="probe">
+  <p class="tag">01 — The instrument</p>
+  <h2>How <code>retained_bytes</code> counts</h2>
+  <p>Every number in this report comes from one 24-line walker. It starts at <code>out.grad_fn</code>, does a depth-first traversal over <code>node.next_functions</code>, and for each node reads every attribute whose name starts with <code>_saved_</code>. Those are PyTorch&rsquo;s Python-side windows onto the C++ node&rsquo;s saved-variable slots.</p>
+  <p>The one subtlety that makes the numbers honest: it dedupes by <code>storage.data_ptr()</code>, not by tensor identity. Two tensors that are views of the same buffer get counted <em>once</em>. That is why Part 2 reports 30.25&nbsp;MiB and not the naive 36&nbsp;MiB &mdash; each ReLU output is literally the same memory as the next layer&rsquo;s matmul input.</p>
+
+<pre><code><span class="c"># the whole instrument</span>
+stack = [out.grad_fn]
+while stack:
+    node = stack.pop()
+    for attr in dir(node):
+        if attr.startswith(<span class="g">"_saved_"</span>):          <span class="c"># ← the window into the C++ node</span>
+            v = getattr(node, attr)
+            if torch.is_tensor(v):
+                s = v.untyped_storage()
+                if s.data_ptr() not in storages:  <span class="c"># ← dedupe by BUFFER, not tensor</span>
+                    total += s.nbytes()
+    for nxt, _ in node.next_functions:            <span class="c"># ← walk the graph edges</span>
+        stack.append(nxt)</code></pre>
+</section>
+
+<hr class="sep">
+
+<!-- ================= Q1 ================= -->
+<section id="addr">
+  <p class="tag">Part 1 &nbsp;·&nbsp; Question 1</p>
+  <h2>For <code>y = q @ k.T</code>, where exactly is the activation kept?</h2>
+
+  <div class="q">
+    <span class="lbl">Your question</span>
+    <p>&ldquo;Where exactly are the saved tensors kept? <code>y = q @ k.T</code> — where is the activation tensor saved to be used in the backward pass?&rdquo;</p>
+  </div>
+
+  <div class="answer">
+    <span class="lbl">Short answer</span>
+    <p>Nowhere new. The <code>MmBackward0</code> node — a C++ object on the heap, owned by <code>y</code> through its <code>grad_fn</code> pointer — holds two <code>SavedVariable</code> slots that <strong>reference the buffers <code>q</code> and <code>k</code> already own</strong>. No copy is made. The cost is not extra bytes allocated; the cost is bytes that <em>cannot be released</em>.</p>
+    <p>The script proves this in one line: <code class="mono">y.grad_fn._saved_self <span class="hl-cool">is</span> q</code> returns <code>True</code>, and <code>_saved_mat2.data_ptr() == k.data_ptr()</code> also returns <code>True</code>.</p>
+  </div>
+
+  <p>Here is the full chain of custody. Read it left to right: a Python name, an autograd node, a raw buffer.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 430" role="img" aria-label="Exploded view of y = q @ k.T showing the MmBackward0 node holding SavedVariable references to the same storage buffers that q and k own">
+        <!-- lane headers -->
+        <text class="axlbl" x="24" y="22">Python tensors</text>
+        <text class="axlbl" x="330" y="22">Autograd graph — C++ heap</text>
+        <text class="axlbl" x="762" y="22">Memory — untyped storage</text>
+        <line class="thin" x1="24" y1="32" x2="290" y2="32"/>
+        <line class="thin" x1="330" y1="32" x2="708" y2="32"/>
+        <line class="thin" x1="762" y1="32" x2="956" y2="32"/>
+
+        <!-- q -->
+        <rect class="s-node" x="24" y="60" width="150" height="54" rx="4"/>
+        <text class="s-lbl" x="40" y="82">q</text>
+        <text class="s-lbl-s" x="40" y="99">[4, 8]  requires_grad</text>
+
+        <!-- k -->
+        <rect class="s-node" x="24" y="292" width="150" height="54" rx="4"/>
+        <text class="s-lbl" x="40" y="314">k</text>
+        <text class="s-lbl-s" x="40" y="331">[4, 8]  requires_grad</text>
+
+        <!-- y -->
+        <rect class="s-node s-hot" x="24" y="176" width="150" height="54" rx="4"/>
+        <text class="s-lbl s-hot" x="40" y="198">y</text>
+        <text class="s-lbl-s" x="40" y="215">[4, 4]  the output</text>
+
+        <!-- MmBackward0 node -->
+        <rect class="s-node s-hot" x="330" y="112" width="286" height="182" rx="6"/>
+        <text class="s-ttl s-hot" x="348" y="137">MmBackward0</text>
+        <text class="s-lbl-s" x="348" y="153">one C++ Node object</text>
+
+        <!-- slot 1 -->
+        <rect class="s-fill" x="348" y="166" width="250" height="42" rx="3"/>
+        <text class="s-lbl" x="360" y="184">_saved_self</text>
+        <text class="s-lbl-s" x="360" y="199">SavedVariable → q, shape [4,8]</text>
+        <!-- slot 2 -->
+        <rect class="s-fill" x="348" y="216" width="250" height="42" rx="3"/>
+        <text class="s-lbl" x="360" y="234">_saved_mat2</text>
+        <text class="s-lbl-s" x="360" y="249">SavedVariable → k.T view, [8,4]</text>
+        <!-- next_functions -->
+        <text class="s-lbl-s" x="348" y="278">next_functions → AccumulateGrad(q), PermuteBackward0</text>
+
+        <!-- storages -->
+        <rect class="s-node" x="762" y="60" width="194" height="54" rx="4"/>
+        <text class="s-lbl" x="776" y="82">storage A</text>
+        <text class="s-lbl-s" x="776" y="99">32 floats · 128 B</text>
+
+        <rect class="s-node" x="762" y="292" width="194" height="54" rx="4"/>
+        <text class="s-lbl" x="776" y="314">storage B</text>
+        <text class="s-lbl-s" x="776" y="331">32 floats · 128 B</text>
+
+        <!-- edges -->
+        <g class="line">
+          <path d="M174,203 L326,203" marker-end="url(#ar)"/>
+        </g>
+        <text class="s-lbl-s" x="200" y="196">.grad_fn</text>
+        <text class="s-lbl-s" x="200" y="222">(owns the node)</text>
+
+        <!-- q .data -> storage A -->
+        <path class="thin" d="M174,87 L758,87" marker-end="url(#ar)" stroke="currentColor" opacity=".45"/>
+        <text class="s-lbl-s" x="420" y="80">q.data — the actual numbers</text>
+        <!-- k .data -> storage B -->
+        <path class="thin" d="M174,319 L758,319" marker-end="url(#ar)" stroke="currentColor" opacity=".45"/>
+        <text class="s-lbl-s" x="420" y="312">k.data — the actual numbers</text>
+
+        <!-- saved slots -> storages (the pins) -->
+        <path class="hotstroke" stroke-width="1.8" d="M598,178 C680,178 690,100 758,94" marker-end="url(#ar-hot)"/>
+        <path class="hotstroke" stroke-width="1.8" d="M598,232 C680,232 690,306 758,312" marker-end="url(#ar-hot)"/>
+        <text class="s-lbl-s s-hot" x="628" y="150" fill="var(--carmine)">pins — no copy</text>
+        <text class="s-lbl-s s-hot" x="628" y="352" fill="var(--carmine)">pins — no copy</text>
+
+        <!-- verdict band -->
+        <rect x="24" y="376" width="932" height="42" rx="4" fill="var(--carmine-wash)" stroke="var(--carmine)" stroke-width="1"/>
+        <text class="s-lbl" x="44" y="394" fill="var(--carmine)">Storage A and B cannot be freed while y is alive.</text>
+        <text class="s-lbl-s" x="44" y="410">Delete the Python names q and k and the buffers survive — the node still holds them. That is the whole cost model.</text>
+      </svg>
+    </div>
+    <figcaption><b>The address of a saved tensor.</b> It is not a location in some &ldquo;activation store&rdquo;. It is a reference held by the backward node, and the node is held by the output tensor. Drop <code>y</code> and the whole chain collapses; keep <code>y</code> and every input buffer upstream stays resident.</figcaption>
+  </figure>
+
+  <h3>Verified: deleting the Python name does not free the memory</h3>
+  <p>The script implies this; a probe confirms it. After <code>del k</code> and a forced <code>gc.collect()</code>, <code>node._saved_mat2.data_ptr()</code> still returns the original address. The buffer is alive because the graph node is its owner of record.</p>
+  <p>And the moment the graph is consumed, the pins release. Calling <code>y.sum().backward()</code> and then touching <code>node._saved_self</code> raises:</p>
+<pre><code><span class="k">RuntimeError</span>: Trying to backward through the graph a second time
+(or directly access saved tensors after they have already been freed)</code></pre>
+  <p>That error message is usually read as an annoyance. It is actually the memory-release event, made audible.</p>
+</section>
+
+<!-- ================= 02 WHY THOSE TWO ================= -->
+<section id="why">
+  <p class="tag">02 — Part 1, continued</p>
+  <h2>Why <em>those</em> two tensors, and not others</h2>
+  <p>The script&rsquo;s header comment gives the rule, and the rule fully determines the saving. For <code>Y = Q Kᵀ</code>:</p>
+
+  <div class="rules">
+    <div class="rule">
+      <span class="eq">∂L/∂Q &nbsp;=&nbsp; (∂L/∂Y) @ <span class="hl-hot">K</span></span>
+      <span class="arw">needs K, so it stores →</span>
+      <span class="slot">_saved_mat2</span>
+    </div>
+    <div class="rule">
+      <span class="eq">∂L/∂K &nbsp;=&nbsp; (∂L/∂Y)ᵀ @ <span class="hl-hot">Q</span></span>
+      <span class="arw">needs Q, so it stores →</span>
+      <span class="slot">_saved_self</span>
+    </div>
+  </div>
+
+  <p>Read that carefully, because the cross-over is the interesting part: <strong><code>_saved_mat2</code> (which is <code>k</code>) exists to compute the gradient of <code>q</code></strong>, not of <code>k</code>. Autograd saves an operand for the sake of the <em>other</em> operand&rsquo;s gradient.</p>
+  <p>Which yields a testable prediction: turn off <code>requires_grad</code> on one input, and the <em>other</em> input stops being saved. It holds exactly:</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>q.requires_grad</th><th>k.requires_grad</th><th>MmBackward0 saves</th><th>because</th></tr></thead>
+      <tbody>
+        <tr><td>True</td><td>True</td><td class="hl-hot">_saved_self, _saved_mat2</td><td class="dim">both rules are live</td></tr>
+        <tr><td>True</td><td>False</td><td class="hl-hot">_saved_mat2</td><td class="dim">only ∂L/∂Q is needed → only K kept</td></tr>
+        <tr><td>False</td><td>True</td><td class="hl-hot">_saved_self</td><td class="dim">only ∂L/∂K is needed → only Q kept</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Autograd is not conservatively hoarding the forward pass. It saves the minimum the live backward formulas name &mdash; and that minimum is exactly what you pay for. This is the mechanism behind a number you will meet in Part 2, where seven weight matrices are retained out of eight.</p>
+</section>
+
+<!-- ================= 03 WHAT SAVES WHAT ================= -->
+<section id="table1">
+  <p class="tag">03 — Part 1, continued</p>
+  <h2>Some ops save the input; some save the output; some save nothing</h2>
+  <p>The script demonstrates three of these. The full picture, probed directly, is worth having in front of you &mdash; especially the last three rows, which explain Part 3.</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>expression</th><th>grad_fn</th><th>saved slots</th><th>what that is</th></tr></thead>
+      <tbody>
+        <tr><td>q @ k.T</td><td>MmBackward0</td><td class="hl-hot">_saved_self, _saved_mat2</td><td class="dim">both <b>inputs</b></td></tr>
+        <tr><td>Linear(x)</td><td>AddmmBackward0</td><td class="hl-hot">_saved_mat1, _saved_mat2</td><td class="dim">input <b>and</b> weight</td></tr>
+        <tr><td>torch.relu(x)</td><td>ReluBackward0</td><td class="hl-hot">_saved_result</td><td class="dim">the <b>output</b> — sign is recoverable from it</td></tr>
+        <tr><td>torch.softmax(x)</td><td>SoftmaxBackward0</td><td class="hl-hot">_saved_result</td><td class="dim">the <b>output</b> — jacobian is built from it</td></tr>
+        <tr><td>torch.exp(x)</td><td>ExpBackward0</td><td class="hl-hot">_saved_result</td><td class="dim">the <b>output</b> — it <em>is</em> the derivative</td></tr>
+        <tr><td>x * 3.0</td><td>MulBackward0</td><td class="hl-hot">_saved_other</td><td class="dim">the scalar only</td></tr>
+        <tr><td>x + x</td><td>AddBackward0</td><td class="hl-cool">— nothing —</td><td class="dim">derivative is 1; no operand needed</td></tr>
+        <tr><td>x.transpose(0,1)</td><td>TransposeBackward0</td><td class="hl-cool">— nothing —</td><td class="dim">metadata-only; just re-permutes the grad</td></tr>
+        <tr><td>torch.cat([a,b])</td><td>CatBackward0</td><td class="hl-cool">— nothing —</td><td class="dim">backward is a split; it stores sizes, not data</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="answer">
+    <span class="lbl">Hold on to this one</span>
+    <p><code>CatBackward0</code> saves <strong>nothing</strong>. Keep that in mind for Part 3 — because the KV-cache blowup is <em>not</em> caused by the <code>cat</code> node. It is caused by what <code>cat</code> hands to the matmul downstream.</p>
+  </div>
+</section>
+
+<!-- ================= 04 LIFETIME ================= -->
+<section id="life">
+  <p class="tag">04 — Part 1, closing</p>
+  <h2>The lifetime, and what <code>no_grad</code> changes</h2>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 268" role="img" aria-label="Timeline comparing grad-enabled and no_grad execution: with grad the input buffers stay resident from forward until backward, without grad they are freed immediately">
+        <!-- axis -->
+        <line class="ax" x1="150" y1="236" x2="940" y2="236"/>
+        <g class="tick">
+          <text x="196" y="254" text-anchor="middle">forward</text>
+          <text x="560" y="254" text-anchor="middle">… time held …</text>
+          <text x="900" y="254" text-anchor="middle">backward</text>
+        </g>
+        <line class="grid" x1="196" y1="34" x2="196" y2="230"/>
+        <line class="grid" x1="900" y1="34" x2="900" y2="230"/>
+
+        <!-- track 1 -->
+        <text class="axlbl" x="16" y="60">grad ON</text>
+        <text class="s-lbl-s" x="16" y="78">y = q @ k.T</text>
+        <rect x="196" y="46" width="704" height="26" rx="3" fill="var(--carmine-wash)" stroke="var(--carmine)"/>
+        <text class="s-lbl" x="212" y="64" fill="var(--carmine)">storage A (q) — pinned by _saved_self</text>
+        <rect x="196" y="82" width="704" height="26" rx="3" fill="var(--carmine-wash)" stroke="var(--carmine)"/>
+        <text class="s-lbl" x="212" y="100" fill="var(--carmine)">storage B (k) — pinned by _saved_mat2</text>
+        <text class="s-lbl-s" x="908" y="64">freed</text>
+        <text class="s-lbl-s" x="908" y="100">freed</text>
+
+        <!-- divider -->
+        <line class="thin" x1="16" y1="128" x2="940" y2="128"/>
+
+        <!-- track 2 -->
+        <text class="axlbl" x="16" y="164">grad OFF</text>
+        <text class="s-lbl-s" x="16" y="182">with torch.no_grad()</text>
+        <rect x="196" y="150" width="46" height="26" rx="3" fill="var(--petrol-wash)" stroke="var(--petrol)"/>
+        <text class="s-lbl" x="252" y="168" fill="var(--petrol)">y.grad_fn is None — nothing pinned</text>
+        <path class="coolstroke dash" d="M556,163 L664,163" marker-end="url(#ar-cool)"/>
+        <text class="s-lbl-s" x="676" y="167">buffers reusable the instant the expression ends</text>
+        <text class="s-lbl-s" x="196" y="200">same FLOPs. same result. no graph.</text>
+      </svg>
+    </div>
+    <figcaption><b>Identical arithmetic, opposite memory profiles.</b> <code>no_grad</code> does not make the matmul cheaper — it makes the matmul&rsquo;s inputs <em>collectable</em>. This is precisely what the <code>@torch.no_grad()</code> decorator buys <code>sample_response</code>.</figcaption>
+  </figure>
+</section>
+
+<hr class="sep">
+
+<!-- ================= 05 PART 2 ================= -->
+<section id="ledger2">
+  <p class="tag">Part 2 &nbsp;·&nbsp; 05</p>
+  <h2>30.25 MiB, itemized</h2>
+  <p>Eight <code>Linear(1024, 1024)</code> layers, batch 64, ReLU between. The script prints one number; here is where every byte of it comes from.</p>
+
+  <div class="stats">
+    <div class="stat hot"><span class="k">grad on</span><span class="v">30.25</span><span class="u">MiB retained</span></div>
+    <div class="stat cool"><span class="k">grad off</span><span class="v">0.00</span><span class="u">MiB retained</span></div>
+    <div class="stat"><span class="k">unique buffers</span><span class="v">16</span><span class="u">after data_ptr dedupe</span></div>
+    <div class="stat"><span class="k">flops</span><span class="v">identical</span><span class="u">in both runs</span></div>
+  </div>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 300" role="img" aria-label="Three layers of the eight-layer chain showing which tensors each Addmm and Relu node saves, and that the relu output shares storage with the next layer's matmul input">
+        <text class="axlbl" x="24" y="22">the chain, first three layers of eight</text>
+
+        <!-- x tensor -->
+        <rect class="s-node" x="24" y="106" width="86" height="46" rx="4"/>
+        <text class="s-lbl" x="40" y="128">x</text>
+        <text class="s-lbl-s" x="40" y="143">[64,1024]</text>
+        <text class="s-lbl-s" x="24" y="170">no grad</text>
+
+        <g>
+          <!-- layer 1 -->
+          <rect class="s-node" x="146" y="86" width="120" height="86" rx="5"/>
+          <text class="s-ttl" x="160" y="107">Addmm ①</text>
+          <rect class="s-fill" x="158" y="116" width="96" height="20" rx="2"/>
+          <text class="s-lbl-s" x="166" y="130" fill="var(--carmine)">mat1 · 0.25 MiB</text>
+          <rect x="158" y="140" width="96" height="20" rx="2" fill="none" stroke="var(--rule)" stroke-dasharray="3 3"/>
+          <text class="s-lbl-s" x="166" y="154">mat2 — NOT saved</text>
+
+          <rect class="s-node" x="286" y="98" width="92" height="62" rx="5"/>
+          <text class="s-ttl" x="298" y="119">Relu ①</text>
+          <rect class="s-fill" x="296" y="126" width="72" height="20" rx="2"/>
+          <text class="s-lbl-s" x="302" y="140" fill="var(--carmine)">result</text>
+
+          <!-- layer 2 -->
+          <rect class="s-node" x="418" y="86" width="120" height="86" rx="5"/>
+          <text class="s-ttl" x="432" y="107">Addmm ②</text>
+          <rect class="s-fill" x="430" y="116" width="96" height="20" rx="2"/>
+          <text class="s-lbl-s" x="438" y="130" fill="var(--carmine)">mat1 · same buf</text>
+          <rect class="s-fill" x="430" y="140" width="96" height="20" rx="2"/>
+          <text class="s-lbl-s" x="438" y="154" fill="var(--carmine)">mat2 · 4.00 MiB</text>
+
+          <rect class="s-node" x="558" y="98" width="92" height="62" rx="5"/>
+          <text class="s-ttl" x="570" y="119">Relu ②</text>
+          <rect class="s-fill" x="568" y="126" width="72" height="20" rx="2"/>
+          <text class="s-lbl-s" x="574" y="140" fill="var(--carmine)">result</text>
+
+          <!-- layer 3 -->
+          <rect class="s-node" x="690" y="86" width="120" height="86" rx="5"/>
+          <text class="s-ttl" x="704" y="107">Addmm ③</text>
+          <rect class="s-fill" x="702" y="116" width="96" height="20" rx="2"/>
+          <text class="s-lbl-s" x="710" y="130" fill="var(--carmine)">mat1 · same buf</text>
+          <rect class="s-fill" x="702" y="140" width="96" height="20" rx="2"/>
+          <text class="s-lbl-s" x="710" y="154" fill="var(--carmine)">mat2 · 4.00 MiB</text>
+
+          <text class="s-lbl" x="836" y="132">… ×5 more</text>
+        </g>
+
+        <g class="line">
+          <path d="M110,129 L142,129" marker-end="url(#ar)"/>
+          <path d="M266,129 L282,129" marker-end="url(#ar)"/>
+          <path d="M378,129 L414,129" marker-end="url(#ar)"/>
+          <path d="M538,129 L554,129" marker-end="url(#ar)"/>
+          <path d="M650,129 L686,129" marker-end="url(#ar)"/>
+        </g>
+
+        <!-- aliasing braces -->
+        <path class="coolstroke dash" d="M332,150 C332,208 478,208 478,168" marker-end="url(#ar-cool)"/>
+        <text class="s-lbl-s" x="340" y="226" fill="var(--petrol)">Relu ① result and Addmm ② mat1 are the SAME buffer — counted once</text>
+        <path class="coolstroke dash" d="M604,150 C604,196 750,196 750,168" marker-end="url(#ar-cool)"/>
+
+        <!-- callout on layer 1 -->
+        <path class="thin" d="M206,84 L206,58" stroke="currentColor" opacity=".5"/>
+        <text class="s-lbl-s" x="146" y="50">x has no requires_grad, so ∂L/∂x is never needed,</text>
+        <text class="s-lbl-s" x="146" y="36">so weight ① is never saved. 7 weights, not 8.</text>
+      </svg>
+    </div>
+    <figcaption><b>Two savings hide in this number.</b> Storage aliasing (each ReLU output <em>is</em> the next matmul&rsquo;s input) and conditional saving (layer&nbsp;1&rsquo;s weight is skipped because its input is not differentiable) together turn a naive 36&nbsp;MiB into a measured 30.25&nbsp;MiB.</figcaption>
+  </figure>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>saved slot</th><th>shape</th><th class="num">each</th><th class="num">unique buffers</th><th class="num">total</th><th>note</th></tr></thead>
+      <tbody>
+        <tr><td>AddmmBackward0 · _saved_mat2</td><td>[1024,1024]</td><td class="num">4.00 MiB</td><td class="num">7</td><td class="num hl-hot">28.00 MiB</td><td class="dim">weights — layer 1&rsquo;s is skipped</td></tr>
+        <tr><td>AddmmBackward0 · _saved_mat1</td><td>[64,1024]</td><td class="num">0.25 MiB</td><td class="num">8</td><td class="num hl-hot">2.00 MiB</td><td class="dim">layer inputs: x + relu₁…relu₇</td></tr>
+        <tr><td>ReluBackward0 · _saved_result</td><td>[64,1024]</td><td class="num">0.25 MiB</td><td class="num">1</td><td class="num hl-hot">0.25 MiB</td><td class="dim">only relu₈ is not already counted</td></tr>
+      </tbody>
+      <tfoot><tr><td>total</td><td></td><td class="num"></td><td class="num">16</td><td class="num">30.25 MiB</td><td class="dim">matches the script exactly</td></tr></tfoot>
+    </table>
+  </div>
+
+  <p>Note the shape of the bill: <strong>92% of it is weights</strong>, not activations, because this toy has a fat weight matrix and a thin batch. In a real transformer decode the proportion inverts — and that inversion is Part 3.</p>
+</section>
+
+<hr class="sep">
+
+<!-- ================= Q3 ================= -->
+<section id="blowup">
+  <p class="tag">Part 3 &nbsp;·&nbsp; Question 3</p>
+  <h2>Why incremental blew up and full-sequence didn&rsquo;t</h2>
+
+  <div class="q">
+    <span class="lbl">Your question</span>
+    <p>&ldquo;Why did incremental blow up but not full-seq?&rdquo;</p>
+  </div>
+
+  <div class="answer">
+    <span class="lbl">Short answer</span>
+    <p>Both compute the same <em>numbers</em>. But incremental decoding computes them from <strong>T different buffers</strong> and full-sequence computes them from <strong>one</strong>.</p>
+    <p>At decode step <em>t</em>, <code>torch.cat([prev_k, k_new])</code> allocates a <em>brand new</em> tensor of length <em>t</em> — it does not extend the old one in place. Then the matmul on the next line pins that new buffer. So you end up holding buffers of length 1, 2, 3, … T <em>simultaneously</em>. They are logically prefixes of each other, but physically they are T separate allocations. Summed: 1+2+…+T = T(T+1)/2.</p>
+    <p>The full-sequence pass runs <em>one</em> matmul over the whole <code>[H, T, D]</code> key tensor. One buffer, pinned once, length T.</p>
+  </div>
+
+  <p>The tempting wrong answer is &ldquo;<code>cat</code> is expensive because autograd saves the concatenation&rdquo;. It isn&rsquo;t — you saw in the table above that <code>CatBackward0</code> saves nothing at all. The cost is one step downstream: <code>cat</code> <em>materialises</em> a fresh buffer, and <code>BmmBackward0</code> keeps it alive.</p>
+
+  <h3>The incremental graph</h3>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 420" role="img" aria-label="Computational graph for four incremental decode steps, showing each cat allocating a new key buffer of growing length that the matmul then pins">
+        <text class="axlbl" x="24" y="22">incremental decode — each step builds its own key buffer</text>
+
+        <g class="tick">
+          <text x="150" y="46" text-anchor="middle">step t=1</text>
+          <text x="352" y="46" text-anchor="middle">step t=2</text>
+          <text x="554" y="46" text-anchor="middle">step t=3</text>
+          <text x="756" y="46" text-anchor="middle">step t=4</text>
+          <text x="920" y="46" text-anchor="middle">…</text>
+        </g>
+
+        <!-- token inputs -->
+        <g>
+          <rect class="s-node" x="112" y="60" width="76" height="30" rx="3"/><text class="s-lbl-s" x="150" y="80" text-anchor="middle">tok[0]</text>
+          <rect class="s-node" x="314" y="60" width="76" height="30" rx="3"/><text class="s-lbl-s" x="352" y="80" text-anchor="middle">tok[1]</text>
+          <rect class="s-node" x="516" y="60" width="76" height="30" rx="3"/><text class="s-lbl-s" x="554" y="80" text-anchor="middle">tok[2]</text>
+          <rect class="s-node" x="718" y="60" width="76" height="30" rx="3"/><text class="s-lbl-s" x="756" y="80" text-anchor="middle">tok[3]</text>
+        </g>
+
+        <!-- cat row -->
+        <text class="axlbl" x="24" y="128">cat →</text>
+        <text class="s-lbl-s" x="24" y="146">new buffer</text>
+        <text class="s-lbl-s" x="24" y="160">every step</text>
+        <g>
+          <rect x="112" y="112" width="76" height="20" rx="2" class="s-fill"/>
+          <text class="s-lbl-s" x="196" y="126">len 1</text>
+
+          <rect x="314" y="112" width="76" height="20" rx="2" class="s-fill"/>
+          <rect x="314" y="134" width="76" height="20" rx="2" class="s-fill"/>
+          <text class="s-lbl-s" x="398" y="137">len 2</text>
+
+          <rect x="516" y="112" width="76" height="20" rx="2" class="s-fill"/>
+          <rect x="516" y="134" width="76" height="20" rx="2" class="s-fill"/>
+          <rect x="516" y="156" width="76" height="20" rx="2" class="s-fill"/>
+          <text class="s-lbl-s" x="600" y="148">len 3</text>
+
+          <rect x="718" y="112" width="76" height="20" rx="2" class="s-fill"/>
+          <rect x="718" y="134" width="76" height="20" rx="2" class="s-fill"/>
+          <rect x="718" y="156" width="76" height="20" rx="2" class="s-fill"/>
+          <rect x="718" y="178" width="76" height="20" rx="2" class="s-fill"/>
+          <text class="s-lbl-s" x="800" y="159">len 4</text>
+        </g>
+        <!-- carry arrows between steps -->
+        <g class="thin" stroke="currentColor" opacity=".45">
+          <path d="M188,122 L310,122" marker-end="url(#ar)"/>
+          <path d="M390,133 L512,133" marker-end="url(#ar)"/>
+          <path d="M592,144 L714,144" marker-end="url(#ar)"/>
+        </g>
+        <text class="s-lbl-s" x="200" y="106">copied, not extended</text>
+
+        <!-- bmm row -->
+        <text class="axlbl" x="24" y="256">Bmm →</text>
+        <text class="s-lbl-s" x="24" y="274">pins it</text>
+        <g>
+          <rect class="s-node s-hot" x="106" y="238" width="88" height="46" rx="4"/>
+          <text class="s-lbl-s" x="150" y="256" text-anchor="middle" fill="var(--carmine)">BmmBackward0</text>
+          <text class="s-lbl-s" x="150" y="272" text-anchor="middle">saves len-1</text>
+
+          <rect class="s-node s-hot" x="308" y="238" width="88" height="46" rx="4"/>
+          <text class="s-lbl-s" x="352" y="256" text-anchor="middle" fill="var(--carmine)">BmmBackward0</text>
+          <text class="s-lbl-s" x="352" y="272" text-anchor="middle">saves len-2</text>
+
+          <rect class="s-node s-hot" x="510" y="238" width="88" height="46" rx="4"/>
+          <text class="s-lbl-s" x="554" y="256" text-anchor="middle" fill="var(--carmine)">BmmBackward0</text>
+          <text class="s-lbl-s" x="554" y="272" text-anchor="middle">saves len-3</text>
+
+          <rect class="s-node s-hot" x="712" y="238" width="88" height="46" rx="4"/>
+          <text class="s-lbl-s" x="756" y="256" text-anchor="middle" fill="var(--carmine)">BmmBackward0</text>
+          <text class="s-lbl-s" x="756" y="272" text-anchor="middle">saves len-4</text>
+        </g>
+        <g class="hotstroke">
+          <path d="M150,138 L150,234" marker-end="url(#ar-hot)"/>
+          <path d="M352,160 L352,234" marker-end="url(#ar-hot)"/>
+          <path d="M554,182 L554,234" marker-end="url(#ar-hot)"/>
+          <path d="M756,204 L756,234" marker-end="url(#ar-hot)"/>
+        </g>
+
+        <!-- outputs to stack -->
+        <g class="line">
+          <path d="M150,284 L150,318" marker-end="url(#ar)"/>
+          <path d="M352,284 L352,318" marker-end="url(#ar)"/>
+          <path d="M554,284 L554,318" marker-end="url(#ar)"/>
+          <path d="M756,284 L756,318" marker-end="url(#ar)"/>
+        </g>
+        <rect class="s-node" x="106" y="320" width="694" height="34" rx="4"/>
+        <text class="s-lbl" x="453" y="342" text-anchor="middle">torch.stack(per_step).sum() — every step stays reachable</text>
+
+        <rect x="24" y="374" width="932" height="34" rx="4" fill="var(--carmine-wash)" stroke="var(--carmine)"/>
+        <text class="s-lbl" x="44" y="391" fill="var(--carmine)">Nothing can be dropped — generation needs a logprob at every position.</text>
+        <text class="s-lbl-s" x="44" y="405">Four steps of real data, ten rows held: 1+2+3+4. At T steps it is T(T+1)/2.</text>
+      </svg>
+    </div>
+    <figcaption><b>The staircase.</b> Each <code>cat</code> copies the whole prefix into a fresh allocation and each <code>Bmm</code> pins the copy. Four steps hold ten rows&rsquo; worth of keys — for the same four rows of data, stored four times over.</figcaption>
+  </figure>
+
+  <h3>The full-sequence graph</h3>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 250" role="img" aria-label="Computational graph for one full-sequence attention pass, with a single key buffer pinned once and one T-by-T attention matrix">
+        <text class="axlbl" x="24" y="22">full-sequence — one pass, one key buffer</text>
+
+        <rect class="s-node" x="24" y="70" width="130" height="70" rx="4"/>
+        <text class="s-lbl" x="40" y="94">full_keys</text>
+        <text class="s-lbl-s" x="40" y="110">[H, T, D]</text>
+        <text class="s-lbl-s" x="40" y="126">a view of tokens</text>
+
+        <rect class="s-node s-hot" x="216" y="62" width="176" height="86" rx="5"/>
+        <text class="s-ttl s-hot" x="232" y="86">BmmBackward0 ①</text>
+        <rect class="s-fill" x="230" y="96" width="148" height="20" rx="2"/>
+        <text class="s-lbl-s" x="238" y="110" fill="var(--carmine)">saves keys — ONCE</text>
+        <rect class="s-fill" x="230" y="120" width="148" height="20" rx="2"/>
+        <text class="s-lbl-s" x="238" y="134" fill="var(--carmine)">saves queries — same buf</text>
+
+        <rect class="s-node" x="452" y="80" width="118" height="50" rx="4"/>
+        <text class="s-lbl" x="468" y="102">softmax</text>
+        <text class="s-lbl-s" x="468" y="118">→ [H, T, T]</text>
+
+        <rect class="s-node s-hot" x="630" y="62" width="200" height="86" rx="5"/>
+        <text class="s-ttl s-hot" x="646" y="86">BmmBackward0 ②</text>
+        <rect class="s-fill" x="644" y="96" width="172" height="20" rx="2"/>
+        <text class="s-lbl-s" x="652" y="110" fill="var(--carmine)">saves attn weights [H,T,T]</text>
+        <rect class="s-fill" x="644" y="120" width="172" height="20" rx="2"/>
+        <text class="s-lbl-s" x="652" y="134" fill="var(--carmine)">saves values — same buf</text>
+
+        <g class="line">
+          <path d="M154,105 L212,105" marker-end="url(#ar)"/>
+          <path d="M392,105 L448,105" marker-end="url(#ar)"/>
+          <path d="M570,105 L626,105" marker-end="url(#ar)"/>
+        </g>
+
+        <rect x="24" y="180" width="932" height="54" rx="4" fill="var(--petrol-wash)" stroke="var(--petrol)"/>
+        <text class="s-lbl" x="44" y="202" fill="var(--petrol)">Two unique buffers survive the dedupe: the [H,T,D] key/value tensor, and the [H,T,T] attention matrix.</text>
+        <text class="s-lbl-s" x="44" y="220">Measured at T=8: 64.0 KiB + 4.0 KiB = 0.066 MiB total. The incremental version of the same computation: 0.338 MiB.</text>
+      </svg>
+    </div>
+    <figcaption><b>One buffer, pinned once.</b> Queries, keys and values are all views of the same <code>tokens</code> storage, so <code>data_ptr</code> dedupe collapses them to a single 64&nbsp;KiB entry. The only genuinely new retained tensor is the attention matrix.</figcaption>
+  </figure>
+
+  <h3>The measured ledgers, side by side</h3>
+  <p>This is the same computation run both ways at T&nbsp;=&nbsp;8, with every retained buffer listed. The asymmetry is not subtle.</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>incremental — saved buffer</th><th>shape</th><th class="num">bytes</th><th>full-sequence — saved buffer</th><th>shape</th><th class="num">bytes</th></tr></thead>
+      <tbody>
+        <tr><td>Bmm · keys (step 8)</td><td>[16,8,128]</td><td class="num">64.0 KiB</td><td>Bmm① · keys/queries/values</td><td>[16,8,128]</td><td class="num">64.0 KiB</td></tr>
+        <tr><td>Bmm · keys (step 7)</td><td>[16,7,128]</td><td class="num">56.0 KiB</td><td>Bmm② · attn weights</td><td>[16,8,8]</td><td class="num">4.0 KiB</td></tr>
+        <tr><td>Bmm · keys (step 6)</td><td>[16,6,128]</td><td class="num">48.0 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+        <tr><td>Bmm · keys (step 5)</td><td>[16,5,128]</td><td class="num">40.0 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+        <tr><td>Bmm · keys (step 4)</td><td>[16,4,128]</td><td class="num">32.0 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+        <tr><td>Bmm · keys (step 3)</td><td>[16,3,128]</td><td class="num">24.0 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+        <tr><td>Bmm · keys (step 2)</td><td>[16,2,128]</td><td class="num">16.0 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+        <tr><td>Bmm · queries (all steps, aliased)</td><td>[16,1,128]</td><td class="num">64.0 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+        <tr><td>Bmm · attn weights ×8</td><td>[16,1,t]</td><td class="num">2.2 KiB</td><td class="dim">—</td><td class="dim">—</td><td class="num dim">—</td></tr>
+      </tbody>
+      <tfoot><tr><td>total</td><td></td><td class="num hl-hot">346 KiB</td><td>total</td><td></td><td class="num hl-cool">68 KiB</td></tr></tfoot>
+    </table>
+  </div>
+
+  <p>Notice what is <em>missing</em> from the incremental column: a length-1 key buffer. At step&nbsp;0 the cache <em>is</em> <code>tokens[0]</code>, a view — so it dedupes against the tokens storage. Every subsequent step produces a genuinely new allocation. That is the staircase, item by item.</p>
+</section>
+
+<!-- ================= 06 TRIANGLE ================= -->
+<section id="triangle">
+  <p class="tag">06 — the geometry</p>
+  <h2>The picture that explains both questions at once</h2>
+  <p>Strip away the node names and what remains is two shapes. Both have a quadratic region. They differ in what a cell in that region <em>costs</em>.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 470" role="img" aria-label="Side by side memory shapes at T equals 8: incremental holds a triangle of fat key-value rows, full-sequence holds one bar of key-value rows plus a square of one-number attention cells">
+        <!-- LEFT -->
+        <text class="s-ttl s-hot" x="24" y="24" fill="var(--carmine)">INCREMENTAL — 8 decode steps</text>
+        <text class="s-lbl-s" x="24" y="42">a triangle of K/V rows</text>
+
+        <g>
+          <!-- 8 rows, growing -->
+          <g>
+            <rect x="24" y="60" width="46" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="74" text-anchor="end">t=1 · 1 row</text>
+          </g>
+          <g>
+            <rect x="24" y="82" width="92" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="96" text-anchor="end">t=2 · 2 rows</text>
+          </g>
+          <g>
+            <rect x="24" y="104" width="138" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="118" text-anchor="end">t=3 · 3 rows</text>
+          </g>
+          <g>
+            <rect x="24" y="126" width="184" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="140" text-anchor="end">t=4 · 4 rows</text>
+          </g>
+          <g>
+            <rect x="24" y="148" width="230" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="162" text-anchor="end">t=5 · 5 rows</text>
+          </g>
+          <g>
+            <rect x="24" y="170" width="276" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="184" text-anchor="end">t=6 · 6 rows</text>
+          </g>
+          <g>
+            <rect x="24" y="192" width="322" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="206" text-anchor="end">t=7 · 7 rows</text>
+          </g>
+          <g>
+            <rect x="24" y="214" width="368" height="18" rx="2" fill="var(--carmine)" opacity=".82"/>
+            <text class="s-lbl-s" x="476" y="228" text-anchor="end">t=8 · 8 rows</text>
+          </g>
+          <!-- cell separators -->
+          <g stroke="var(--surface)" stroke-width="2">
+            <path d="M70,60 v18 M70,82 v18 M116,82 v18 M70,104 v18 M116,104 v18 M162,104 v18"/>
+            <path d="M70,126 v18 M116,126 v18 M162,126 v18 M208,126 v18"/>
+            <path d="M70,148 v18 M116,148 v18 M162,148 v18 M208,148 v18 M254,148 v18"/>
+            <path d="M70,170 v18 M116,170 v18 M162,170 v18 M208,170 v18 M254,170 v18 M300,170 v18"/>
+            <path d="M70,192 v18 M116,192 v18 M162,192 v18 M208,192 v18 M254,192 v18 M300,192 v18 M346,192 v18"/>
+            <path d="M70,214 v18 M116,214 v18 M162,214 v18 M208,214 v18 M254,214 v18 M300,214 v18 M346,214 v18"/>
+          </g>
+        </g>
+
+        <rect x="24" y="256" width="420" height="66" rx="4" fill="var(--carmine-wash)" stroke="var(--carmine)"/>
+        <text class="s-lbl" x="40" y="278" fill="var(--carmine)">36 K/V rows retained &nbsp;=&nbsp; T(T+1)/2</text>
+        <text class="s-lbl-s" x="40" y="296">each cell = one key row + one value row</text>
+        <text class="s-lbl-s" x="40" y="312">= 2 × 128 numbers = 512 bytes in bf16</text>
+
+        <!-- divider -->
+        <line class="thin" x1="490" y1="16" x2="490" y2="440" stroke="var(--rule)"/>
+
+        <!-- RIGHT -->
+        <text class="s-ttl s-cool" x="530" y="24" fill="var(--petrol)">FULL-SEQUENCE — 1 pass</text>
+        <text class="s-lbl-s" x="530" y="42">one bar of K/V rows + one T×T square</text>
+
+        <rect x="530" y="60" width="368" height="18" rx="2" fill="var(--petrol)" opacity=".82"/>
+        <g stroke="var(--surface)" stroke-width="2">
+          <path d="M576,60 v18 M622,60 v18 M668,60 v18 M714,60 v18 M760,60 v18 M806,60 v18 M852,60 v18"/>
+        </g>
+        <text class="s-lbl-s" x="530" y="96">8 K/V rows — linear in T. Pinned once.</text>
+
+        <!-- attention square -->
+        <text class="s-lbl-s" x="530" y="132">plus the attention matrix [H, T, T]:</text>
+        <g fill="var(--petrol)" opacity=".82">
+          <g>
+            <rect x="530" y="144" width="9" height="9"/><rect x="541" y="144" width="9" height="9"/><rect x="552" y="144" width="9" height="9"/><rect x="563" y="144" width="9" height="9"/><rect x="574" y="144" width="9" height="9"/><rect x="585" y="144" width="9" height="9"/><rect x="596" y="144" width="9" height="9"/><rect x="607" y="144" width="9" height="9"/>
+            <rect x="530" y="155" width="9" height="9"/><rect x="541" y="155" width="9" height="9"/><rect x="552" y="155" width="9" height="9"/><rect x="563" y="155" width="9" height="9"/><rect x="574" y="155" width="9" height="9"/><rect x="585" y="155" width="9" height="9"/><rect x="596" y="155" width="9" height="9"/><rect x="607" y="155" width="9" height="9"/>
+            <rect x="530" y="166" width="9" height="9"/><rect x="541" y="166" width="9" height="9"/><rect x="552" y="166" width="9" height="9"/><rect x="563" y="166" width="9" height="9"/><rect x="574" y="166" width="9" height="9"/><rect x="585" y="166" width="9" height="9"/><rect x="596" y="166" width="9" height="9"/><rect x="607" y="166" width="9" height="9"/>
+            <rect x="530" y="177" width="9" height="9"/><rect x="541" y="177" width="9" height="9"/><rect x="552" y="177" width="9" height="9"/><rect x="563" y="177" width="9" height="9"/><rect x="574" y="177" width="9" height="9"/><rect x="585" y="177" width="9" height="9"/><rect x="596" y="177" width="9" height="9"/><rect x="607" y="177" width="9" height="9"/>
+            <rect x="530" y="188" width="9" height="9"/><rect x="541" y="188" width="9" height="9"/><rect x="552" y="188" width="9" height="9"/><rect x="563" y="188" width="9" height="9"/><rect x="574" y="188" width="9" height="9"/><rect x="585" y="188" width="9" height="9"/><rect x="596" y="188" width="9" height="9"/><rect x="607" y="188" width="9" height="9"/>
+            <rect x="530" y="199" width="9" height="9"/><rect x="541" y="199" width="9" height="9"/><rect x="552" y="199" width="9" height="9"/><rect x="563" y="199" width="9" height="9"/><rect x="574" y="199" width="9" height="9"/><rect x="585" y="199" width="9" height="9"/><rect x="596" y="199" width="9" height="9"/><rect x="607" y="199" width="9" height="9"/>
+            <rect x="530" y="210" width="9" height="9"/><rect x="541" y="210" width="9" height="9"/><rect x="552" y="210" width="9" height="9"/><rect x="563" y="210" width="9" height="9"/><rect x="574" y="210" width="9" height="9"/><rect x="585" y="210" width="9" height="9"/><rect x="596" y="210" width="9" height="9"/><rect x="607" y="210" width="9" height="9"/>
+            <rect x="530" y="221" width="9" height="9"/><rect x="541" y="221" width="9" height="9"/><rect x="552" y="221" width="9" height="9"/><rect x="563" y="221" width="9" height="9"/><rect x="574" y="221" width="9" height="9"/><rect x="585" y="221" width="9" height="9"/><rect x="596" y="221" width="9" height="9"/><rect x="607" y="221" width="9" height="9"/>
+          </g>
+        </g>
+        <path class="thin" d="M626,187 L672,187" marker-end="url(#ar)" stroke="currentColor" opacity=".55"/>
+        <text class="s-lbl-s" x="680" y="176">64 cells — also quadratic!</text>
+        <text class="s-lbl-s" x="680" y="192">but each cell is ONE number</text>
+        <text class="s-lbl-s" x="680" y="208">= 2 bytes in bf16</text>
+
+        <rect x="530" y="256" width="426" height="66" rx="4" fill="var(--petrol-wash)" stroke="var(--petrol)"/>
+        <text class="s-lbl" x="546" y="278" fill="var(--petrol)">8 K/V rows + 64 attention scalars</text>
+        <text class="s-lbl-s" x="546" y="296">the K/V part is linear; the attention part is quadratic</text>
+        <text class="s-lbl-s" x="546" y="312">but at 2 bytes a cell, the square stays cheap for a long time</text>
+
+        <!-- bottom verdict -->
+        <rect x="24" y="352" width="932" height="88" rx="5" fill="var(--surface)" stroke="var(--rule)"/>
+        <text class="s-ttl" x="44" y="378">The difference in one sentence</text>
+        <text class="s-lbl-s" x="44" y="400">Incremental puts the EXPENSIVE thing (a 512-byte K/V row) in the quadratic region.</text>
+        <text class="s-lbl-s" x="44" y="418">Full-sequence puts only the CHEAP thing (a 2-byte attention scalar) there, and keeps K/V linear.</text>
+        <text class="s-lbl-s" x="44" y="436">Same asymptotic class. 256× difference in the coefficient — halved to 128.5× by the triangle being half a square.</text>
+      </svg>
+    </div>
+    <figcaption><b>The whole argument as geometry.</b> Both layouts contain a T² region — that is the &ldquo;both sides are quadratic&rdquo; claim. What separates them is that incremental decoding accidentally files a <em>head-dim-wide</em> tensor into the quadratic bucket, where full-sequence files only a scalar.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= Q2 ================= -->
+<section id="quad">
+  <p class="tag">Part 3 &nbsp;·&nbsp; Question 2</p>
+  <h2>&ldquo;Both sides are quadratic&rdquo; — what that line means</h2>
+
+  <div class="q">
+    <span class="lbl">Your question</span>
+    <p>&ldquo;For part 3 you said <em>both sides are quadratic</em>. I don&rsquo;t get it?&rdquo;</p>
+  </div>
+
+  <div class="answer">
+    <span class="lbl">Short answer</span>
+    <p>It is a claim about the <strong>ratio</strong>, not about either side individually. Since incremental and full-sequence <em>both</em> grow like T², their ratio is a ratio of two quadratics — which converges to a constant instead of growing without bound.</p>
+    <p>So the ratio column in the script&rsquo;s table (19× → 33× → 52× → 74×) is not on its way to infinity. It is climbing toward a ceiling of <strong>128.5×</strong> and will never pass it. That is what &ldquo;grows sub-linearly&rdquo; means: it grows, but with ever-decreasing speed, because the denominator eventually catches up.</p>
+  </div>
+
+  <h3>Term by term</h3>
+  <p>Here is the accounting from the script, split into its three components. <em>H</em> = 16 heads, <em>D</em> = 128 head-dim, 2 bytes per bf16 element, 28 layers.</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>what is saved</th><th>incremental</th><th>order</th><th>full-sequence</th><th>order</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>keys + values<br><span class="dim">the fat one</span></td>
+          <td class="hl-hot">2·H·D·2 · T(T+1)/2</td><td class="hl-hot">O(T²)</td>
+          <td class="hl-cool">2·H·D·2 · T</td><td class="hl-cool">O(T)</td>
+        </tr>
+        <tr>
+          <td>attention weights<br><span class="dim">the thin one</span></td>
+          <td class="hl-hot">H·2 · T(T+1)/2</td><td class="hl-hot">O(T²)</td>
+          <td class="hl-hot">H·2 · T²</td><td class="hl-hot">O(T²)</td>
+        </tr>
+        <tr>
+          <td>queries</td>
+          <td>H·D·2 · T</td><td>O(T)</td>
+          <td>H·D·2 · T</td><td>O(T)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Row two is the sentence you asked about. <strong>The full-sequence pass has a T² term too</strong> — its one <code>[H, T, T]</code> attention matrix per layer. That is what stops the ratio from running away.</p>
+
+  <p>Take the limit and the constant falls out. Keep only the T² terms:</p>
+<pre><code>incremental  ≈  (2·H·D·2 + H·2) · T²/2      <span class="c"># triangle → T²/2</span>
+full-seq     ≈  (H·2) · T²                  <span class="c"># full square</span>
+
+ratio  →  (2·D + 1) / 2  =  (2·128 + 1) / 2  =  <span class="k">128.5×</span></code></pre>
+
+  <p>The <code>2·D</code> is keys and values, each <em>D</em>&nbsp;=&nbsp;128 numbers wide. The <code>1</code> is the single attention scalar. The <code>/2</code> is the triangle being half a square. Everything in that expression is visible in the geometry figure above.</p>
+
+  <h3>Watch the ratio flatten</h3>
+
+  <div class="chart" id="c2">
+    <div class="figbox">
+      <svg viewBox="0 0 920 320" role="img" aria-label="Line chart of the incremental-to-full-sequence memory ratio against sequence length, rising steeply then flattening as it approaches an asymptote of 128.5 times">
+        <!-- gridlines -->
+        <g class="grid">
+          <line x1="58" y1="274" x2="894" y2="274"/>
+          <line x1="58" y1="210" x2="894" y2="210"/>
+          <line x1="58" y1="146" x2="894" y2="146"/>
+          <line x1="58" y1="82" x2="894" y2="82"/>
+          <line x1="58" y1="18" x2="894" y2="18"/>
+        </g>
+        <g class="tick" text-anchor="end">
+          <text x="48" y="278">0</text><text x="48" y="214">35</text><text x="48" y="150">70</text><text x="48" y="86">105</text><text x="48" y="22">140</text>
+        </g>
+        <g class="tick" text-anchor="middle">
+          <text x="58" y="292">32</text><text x="210" y="292">128</text><text x="362" y="292">512</text><text x="514" y="292">2048</text><text x="666" y="292">8192</text><text x="818" y="292">32768</text>
+        </g>
+        <text class="axlbl" x="58" y="312">sequence length T &nbsp;(log₂)</text>
+        <text class="axlbl" x="894" y="312" text-anchor="end">ratio, incremental ÷ full-sequence</text>
+
+        <!-- asymptote -->
+        <line x1="58" y1="39" x2="894" y2="39" stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 5" opacity=".55"/>
+        <text class="dlab" x="66" y="33" fill="currentColor" opacity=".7">ceiling — 128.5×  (2·D + 1) / 2</text>
+
+        <!-- series -->
+        <polyline class="ser-ratio" points="58.0,254.8 102.5,246.8 134.0,239.4 178.5,226.0 210.0,214.3 254.5,194.9 286.0,179.3 330.5,155.9 362.0,139.2 406.5,116.9 438.0,102.8 482.5,85.8 514.0,75.9 558.5,65.0 590.0,59.1 634.5,52.8 666.0,49.5 710.5,46.1 742.0,44.4 786.5,42.6 818.0,41.7 862.5,40.8 894.0,40.4"/>
+
+        <!-- callout at T=512 -->
+        <circle cx="362" cy="139.2" r="4.5" fill="var(--carmine)" stroke="var(--surface)" stroke-width="2"/>
+        <line class="grid" x1="362" y1="139.2" x2="362" y2="274" stroke-dasharray="3 3"/>
+        <text class="dlab" x="372" y="132" fill="var(--carmine)">T=512 → 74×</text>
+
+        <circle cx="666" cy="49.5" r="4.5" fill="var(--carmine)" stroke="var(--surface)" stroke-width="2"/>
+        <text class="dlab" x="662" y="66" text-anchor="end" fill="var(--carmine)">T=8192 → 123×</text>
+
+        <!-- axes -->
+        <line class="ax" x1="58" y1="18" x2="58" y2="274"/>
+        <line class="ax" x1="58" y1="274" x2="894" y2="274"/>
+
+        <rect id="c2-hit" x="58" y="18" width="836" height="256" fill="transparent"/>
+      </svg>
+    </div>
+    <div class="tip" id="c2-tip" role="status" aria-live="polite"></div>
+  </div>
+  <p style="font-size:.9rem;color:var(--muted);max-width:70ch">The curve steepens through the range the script tabulates (32–512), which is exactly why 19× → 74× <em>looks</em> unbounded. Extend the x-axis and it turns over. Hover any point for the exact value.</p>
+
+  <h3>Why the bounded ratio doesn&rsquo;t save you</h3>
+  <p>Here is the trap the script is warning about. &ldquo;Only a bounded constant worse&rdquo; sounds reassuring, and it is completely irrelevant — because <em>both</em> curves are quadratic, and a quadratic in absolute terms is already fatal. Watch the two lines on a log axis:</p>
+
+  <div class="chart" id="c1">
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--carmine)"></i>incremental, grad on</span>
+      <span><i class="swatch" style="background:var(--petrol)"></i>full-sequence, grad on</span>
+      <span style="color:var(--muted)">Qwen3-0.6B · 28 layers · 16 heads · d=128 · bf16</span>
+    </div>
+    <div class="figbox">
+      <svg viewBox="0 0 920 360" role="img" aria-label="Log-log chart of retained attention memory versus sequence length for Qwen3-0.6B, with incremental decoding crossing 24 gigabytes at 512 tokens while full-sequence stays under half a gigabyte">
+        <g class="grid">
+          <line x1="64" y1="314" x2="894" y2="314"/>
+          <line x1="64" y1="264.7" x2="894" y2="264.7"/>
+          <line x1="64" y1="215.3" x2="894" y2="215.3"/>
+          <line x1="64" y1="166" x2="894" y2="166"/>
+          <line x1="64" y1="116.7" x2="894" y2="116.7"/>
+          <line x1="64" y1="67.3" x2="894" y2="67.3"/>
+          <line x1="64" y1="18" x2="894" y2="18"/>
+        </g>
+        <g class="tick" text-anchor="end">
+          <text x="54" y="318">0.01</text><text x="54" y="268.7">0.1</text><text x="54" y="219.3">1</text>
+          <text x="54" y="170">10</text><text x="54" y="120.7">100</text><text x="54" y="71.3">1k</text><text x="54" y="22">10k</text>
+        </g>
+        <g class="tick" text-anchor="middle">
+          <text x="64" y="332">32</text><text x="167.8" y="332">64</text><text x="271.5" y="332">128</text><text x="375.2" y="332">256</text>
+          <text x="479" y="332">512</text><text x="582.8" y="332">1024</text><text x="686.5" y="332">2048</text><text x="790.2" y="332">4096</text><text x="894" y="332">8192</text>
+        </g>
+        <text class="axlbl" x="64" y="352">sequence length T &nbsp;(log₂)</text>
+        <text class="axlbl" x="894" y="352" text-anchor="end">retained attention memory, GiB &nbsp;(log₁₀)</text>
+
+        <!-- 24 GiB device line -->
+        <line x1="64" y1="149.5" x2="894" y2="149.5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 5" opacity=".5"/>
+        <text class="dlab" x="72" y="144" fill="currentColor" opacity=".7">24 GiB — a whole A10 / 3090</text>
+
+        <polyline class="ser-inc" points="64.0,261.4 124.7,244.4 167.8,232.3 228.4,215.1 271.5,202.9 332.2,185.7 375.2,173.4 435.9,156.1 479.0,143.8 539.7,126.4 582.8,114.1 643.4,96.8 686.5,84.4 747.2,67.1 790.2,54.7 850.9,37.4 894.0,25.0"/>
+        <polyline class="ser-seq" points="64.0,311.7 124.7,302.3 167.8,295.3 228.4,285.1 271.5,277.6 332.2,266.4 375.2,258.0 435.9,245.4 479.0,235.9 539.7,221.8 582.8,211.4 643.4,196.0 686.5,184.8 747.2,168.6 790.2,156.9 850.9,140.1 894.0,128.1"/>
+
+        <text class="dlab" x="884" y="18" text-anchor="end" fill="var(--carmine)">7,198 GiB</text>
+        <text class="dlab" x="884" y="122" text-anchor="end" fill="var(--petrol)">58.6 GiB</text>
+
+        <!-- T=512 markers -->
+        <line class="grid" x1="479" y1="143.8" x2="479" y2="314" stroke-dasharray="3 3"/>
+        <circle cx="479" cy="143.8" r="4.5" fill="var(--carmine)" stroke="var(--surface)" stroke-width="2"/>
+        <text class="dlab" x="490" y="137" fill="var(--carmine)">28.2 GiB</text>
+        <circle cx="479" cy="235.9" r="4.5" fill="var(--petrol)" stroke="var(--surface)" stroke-width="2"/>
+        <text class="dlab" x="490" y="248" fill="var(--petrol)">0.38 GiB</text>
+
+        <line class="ax" x1="64" y1="18" x2="64" y2="314"/>
+        <line class="ax" x1="64" y1="314" x2="894" y2="314"/>
+
+        <rect id="c1-hit" x="64" y="18" width="830" height="296" fill="transparent"/>
+      </svg>
+    </div>
+    <div class="tip" id="c1-tip" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th class="num">tokens</th><th class="num">incremental</th><th class="num">full-sequence</th><th class="num">ratio</th><th>verdict for a 24 GiB card</th></tr></thead>
+      <tbody>
+        <tr><td class="num">64</td><td class="num hl-hot">0.45 GiB</td><td class="num hl-cool">0.024 GiB</td><td class="num">19×</td><td class="dim">both fine</td></tr>
+        <tr><td class="num">128</td><td class="num hl-hot">1.78 GiB</td><td class="num hl-cool">0.055 GiB</td><td class="num">33×</td><td class="dim">both fine</td></tr>
+        <tr><td class="num">256</td><td class="num hl-hot">7.08 GiB</td><td class="num hl-cool">0.137 GiB</td><td class="num">52×</td><td class="dim">incremental is now most of the card</td></tr>
+        <tr><td class="num">512</td><td class="num hl-hot">28.22 GiB</td><td class="num hl-cool">0.383 GiB</td><td class="num">74×</td><td class="dim">incremental OOMs — before MLP activations or the [T, 151936] logits</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Reasoning traces run to hundreds or thousands of tokens. 512 is not an extreme case; it is a short answer. And the 28&nbsp;GiB above counts only attention tensors &mdash; the MLP activations and the vocabulary-sized logits are still to come.</p>
+</section>
+
+<!-- ================= 07 PAYOFF ================= -->
+<section id="payoff">
+  <p class="tag">07 — the payoff</p>
+  <h2>What the codebase does instead</h2>
+  <p>The fix is not a smaller cache or gradient checkpointing. It is to decline the trade entirely: never build a graph during generation, then build exactly one graph afterwards over the finished sequence.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 980 250" role="img" aria-label="Two-phase pattern: sample_response generates under no_grad with no graph, then sequence_logprob rebuilds one differentiable teacher-forced pass over the finished token sequence">
+        <!-- phase 1 -->
+        <rect class="s-node s-cool" x="24" y="60" width="376" height="112" rx="6"/>
+        <text class="s-ttl s-cool" x="44" y="86">PHASE 1 &nbsp;·&nbsp; generate</text>
+        <text class="s-lbl" x="44" y="110">@torch.no_grad()</text>
+        <text class="s-lbl" x="44" y="128">sample_response(...)</text>
+        <text class="s-lbl-s" x="44" y="150">T incremental steps, KV cache on,</text>
+        <text class="s-lbl-s" x="44" y="164">zero graph nodes, zero retained bytes</text>
+
+        <!-- token ids -->
+        <rect class="s-node" x="440" y="90" width="112" height="52" rx="4"/>
+        <text class="s-lbl" x="496" y="112" text-anchor="middle">token_ids</text>
+        <text class="s-lbl-s" x="496" y="128" text-anchor="middle">[T] — just ints</text>
+
+        <!-- phase 2 -->
+        <rect class="s-node s-hot" x="592" y="60" width="364" height="112" rx="6"/>
+        <text class="s-ttl s-hot" x="612" y="86">PHASE 2 &nbsp;·&nbsp; score</text>
+        <text class="s-lbl" x="612" y="110">sequence_logprob(model, token_ids, ...)</text>
+        <text class="s-lbl-s" x="612" y="132">ONE teacher-forced forward pass</text>
+        <text class="s-lbl-s" x="612" y="146">over the whole sequence, grad on</text>
+        <text class="s-lbl-s" x="612" y="164">→ the linear-K/V side of the chart</text>
+
+        <g class="line">
+          <path d="M400,116 L436,116" marker-end="url(#ar)"/>
+          <path d="M552,116 L588,116" marker-end="url(#ar)"/>
+        </g>
+
+        <rect x="24" y="196" width="932" height="42" rx="4" fill="var(--petrol-wash)" stroke="var(--petrol)"/>
+        <text class="s-lbl" x="44" y="214" fill="var(--petrol)">Cost: one extra forward pass. Saving: the entire T²/2 K/V triangle.</text>
+        <text class="s-lbl-s" x="44" y="230">This is also why the generation-time logits are thrown away rather than reused — they came from a graph that was never built.</text>
+      </svg>
+    </div>
+    <figcaption><b>The two-phase pattern.</b> Recomputing is cheaper than retaining. The generated token IDs are the only thing that crosses the boundary — they carry no graph, so phase 2 starts from a clean slate and gets to use the cheap layout.</figcaption>
+  </figure>
+
+  <p>Which closes the loop on the script&rsquo;s opening question. <code>sample_response</code> runs under <code>@torch.no_grad()</code> because a graph over T decode steps is a T²/2 triangle of key-value rows. The logprob is recomputed in one teacher-forced pass because that pass puts only a 2-byte scalar in the quadratic bucket, and pins the key-value tensor exactly once.</p>
+</section>
+
+<div class="foot">
+  <div>Reproduce: <code>python ch06/01_main-chapter-code/trials_12_activations.py --steps 64</code></div>
+  <div>Every measured figure in this report was read back from <code>retained_bytes()</code> on this machine; the Qwen3-0.6B columns are the script&rsquo;s own analytic model.</div>
+</div>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var C1 = {
+    hit:'c1-hit', tip:'c1-tip', box:'c1',
+    xs:[64,124.7,167.8,228.4,271.5,332.2,375.2,435.9,479,539.7,582.8,643.4,686.5,747.2,790.2,850.9,894],
+    T:[32,48,64,96,128,192,256,384,512,768,1024,1536,2048,3072,4096,6144,8192],
+    a:{y:[261.4,244.4,232.3,215.1,202.9,185.7,173.4,156.1,143.8,126.4,114.1,96.8,84.4,67.1,54.7,37.4,25],
+       v:['0.117','0.257','0.453','1.01','1.78','3.99','7.08','15.9','28.2','63.4','113','253','450','1013','1800','4049','7198'],
+       name:'incremental', col:'var(--carmine)'},
+    b:{y:[311.7,302.3,295.3,285.1,277.6,266.4,258,245.4,235.9,221.8,211.4,196,184.8,168.6,156.9,140.1,128.1],
+       v:['0.011','0.017','0.024','0.039','0.055','0.092','0.137','0.246','0.383','0.738','1.20','2.46','4.16','8.86','15.3','33.5','58.6'],
+       name:'full-seq', col:'var(--petrol)'},
+    unit:'GiB'
+  };
+  var C2 = {
+    hit:'c2-hit', tip:'c2-tip', box:'c2',
+    xs:[58,102.5,134,178.5,210,254.5,286,330.5,362,406.5,438,482.5,514,558.5,590,634.5,666,710.5,742,786.5,818,862.5,894],
+    T:[32,48,64,96,128,192,256,384,512,768,1024,1536,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536],
+    a:{y:[254.8,246.8,239.4,226,214.3,194.9,179.3,155.9,139.2,116.9,102.8,85.8,75.9,65,59.1,52.8,49.5,46.1,44.4,42.6,41.7,40.8,40.4],
+       v:['10.5','14.9','18.9','26.2','32.6','43.3','51.8','64.6','73.7','85.9','93.6','102.9','108.3','114.3','117.5','121.0','122.8','124.6','125.6','126.5','127.0','127.5','127.8'],
+       name:'ratio', col:'var(--carmine)'},
+    unit:'×'
+  };
+
+  function wire(c){
+    var hit=document.getElementById(c.hit), tip=document.getElementById(c.tip), box=document.getElementById(c.box);
+    if(!hit||!tip||!box) return;
+    var svg=hit.ownerSVGElement;
+    function move(ev){
+      var r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal;
+      var vx=(ev.clientX-r.left)/r.width*vb.width;
+      var i=0, best=1e9;
+      for(var j=0;j<c.xs.length;j++){ var d=Math.abs(c.xs[j]-vx); if(d<best){best=d;i=j;} }
+      var html='<span class="th">T = '+c.T[i]+' tokens</span>';
+      html+='<div><i style="background:'+c.a.col+'"></i>'+c.a.name+' &nbsp;<b>'+c.a.v[i]+' '+c.unit+'</b></div>';
+      if(c.b) html+='<div><i style="background:'+c.b.col+'"></i>'+c.b.name+' &nbsp;<b>'+c.b.v[i]+' '+c.unit+'</b></div>';
+      tip.innerHTML=html;
+      var bx=box.getBoundingClientRect();
+      var px=(c.xs[i]/vb.width)*r.width + (r.left-bx.left);
+      var py=((c.b? Math.min(c.a.y[i],c.b.y[i]) : c.a.y[i])/vb.height)*r.height + (r.top-bx.top);
+      tip.style.left=px+'px'; tip.style.top=py+'px';
+      tip.classList.add('on');
+    }
+    hit.addEventListener('mousemove',move);
+    hit.addEventListener('mouseleave',function(){tip.classList.remove('on');});
+    hit.addEventListener('touchmove',function(e){ if(e.touches[0]) move(e.touches[0]); },{passive:true});
+  }
+  wire(C1); wire(C2);
+})();
+</script>

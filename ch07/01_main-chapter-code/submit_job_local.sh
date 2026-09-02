@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Submit one GRPO training job.
 #
-# Uncomment exactly one CMD line below, then:  ./submit_job.sh
+# Uncomment exactly one CMD line below, then:  ./submit_job_local.sh
 # Leave the old ones commented out -- together with jobs.log they are the
 # record of what has been run.
 #
