@@ -1,0 +1,660 @@
+<title>The 710-Line RL Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F5F6F9; --panel:#FFFFFF; --panel-2:#EEF1F6; --line:#DCE0E9; --line-2:#C6CCD9;
+  --ink:#161A24; --ink-2:#4C5464; --muted:#7B8394;
+  --accent:#3D5A9E; --accent-soft:#E4EAF6;
+  --signal:#C25E33; --signal-soft:#F7E7DE;
+  --s1:#3D5A9E; --s2:#C25E33;
+  --grid:#E7EAF1;
+  --shadow:0 1px 2px rgba(22,26,36,.05), 0 8px 24px -16px rgba(22,26,36,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+    --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+    --accent:#6D8FD4; --accent-soft:#1F2A3D;
+    --signal:#D4784A; --signal-soft:#33241B;
+    --s1:#6D8FD4; --s2:#D4784A;
+    --grid:#252B36;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+  --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+  --accent:#6D8FD4; --accent-soft:#1F2A3D;
+  --signal:#D4784A; --signal-soft:#33241B;
+  --s1:#6D8FD4; --s2:#D4784A;
+  --grid:#252B36;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Newsreader",Georgia,"Times New Roman",serif;
+  font-size:18px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+main{
+  display:grid;
+  grid-template-columns:1fr min(66ch,calc(100% - 2.5rem)) 1fr;
+  row-gap:1.35rem;
+  padding:0 0 6rem;
+}
+main > *{grid-column:2}
+main > .plate, main > .wide{
+  grid-column:1/-1;
+  width:min(1060px, calc(100% - 2.5rem));
+  margin-inline:auto;
+}
+
+h1,h2,h3,.eyebrow,.lede,figcaption,th,.tag,.btn,table,.legend{font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif}
+
+/* ── masthead ─────────────────────────────────────────── */
+.masthead{grid-column:1/-1; width:min(1060px,calc(100% - 2.5rem)); margin:0 auto; padding:4.5rem 0 2.25rem; border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-size:.7rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); margin:0 0 1.1rem;
+}
+h1{
+  font-size:clamp(2.4rem,6.5vw,4rem); font-weight:700; letter-spacing:-.028em; line-height:1.02;
+  margin:0 0 1.1rem; text-wrap:balance;
+}
+.lede{font-size:1.12rem; font-weight:500; color:var(--ink-2); max-width:52ch; margin:0; line-height:1.5}
+.meta{
+  display:flex; flex-wrap:wrap; gap:.5rem 1.75rem; margin:1.9rem 0 0;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.72rem; color:var(--muted);
+}
+.meta b{color:var(--ink-2); font-weight:500}
+
+h2{
+  font-size:1.6rem; font-weight:700; letter-spacing:-.02em; line-height:1.15;
+  margin:3.4rem 0 .3rem; text-wrap:balance;
+}
+h2 .num{
+  font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:500;
+  color:var(--accent); display:block; margin-bottom:.5rem; letter-spacing:.1em;
+}
+h3{font-size:1.02rem; font-weight:600; letter-spacing:-.01em; margin:2.1rem 0 .2rem}
+p{margin:0}
+strong{font-weight:600}
+a{color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.83em;
+  background:var(--panel-2); padding:.1em .34em; border-radius:3px;
+  border:1px solid var(--line);
+}
+.ln{color:var(--muted); font-variant-numeric:tabular-nums}
+
+pre{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; line-height:1.7;
+  background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent);
+  border-radius:4px; padding:1.05rem 1.2rem; overflow-x:auto; margin:0;
+  color:var(--ink-2);
+}
+pre b{color:var(--ink); font-weight:600}
+pre i{color:var(--muted); font-style:normal}
+pre em{color:var(--signal); font-style:normal; font-weight:600}
+
+/* ── plates ───────────────────────────────────────────── */
+figure{
+  margin:1.6rem 0 .6rem; background:var(--panel); border:1px solid var(--line);
+  border-radius:6px; padding:1.5rem 1.5rem 1.15rem; box-shadow:var(--shadow);
+}
+figure .scroll{overflow-x:auto}
+figure svg{display:block; width:100%; height:auto; min-width:520px; color:var(--ink-2)}
+figcaption{
+  font-size:.76rem; line-height:1.5; color:var(--muted); margin-top:1.15rem;
+  padding-top:.85rem; border-top:1px solid var(--line); max-width:78ch;
+}
+figcaption b{color:var(--ink-2); font-weight:600}
+.legend{
+  display:flex; flex-wrap:wrap; gap:.4rem 1.4rem; margin:0 0 1.1rem;
+  font-size:.7rem; font-weight:500; letter-spacing:.04em; color:var(--ink-2);
+}
+.legend span{display:flex; align-items:center; gap:.45rem}
+.sw{width:11px; height:11px; border-radius:2px; flex:none}
+
+/* ── tables ───────────────────────────────────────────── */
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:var(--panel)}
+table{border-collapse:collapse; width:100%; font-size:.76rem; min-width:520px}
+th,td{padding:.6rem .85rem; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+th{
+  font-size:.65rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--muted); background:var(--panel-2);
+}
+td{font-family:"IBM Plex Mono",monospace; color:var(--ink-2)}
+td.n{text-align:right; font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+td b{color:var(--ink); font-weight:600}
+td .bad{color:var(--signal); font-weight:600}
+
+.tag{
+  display:inline-block; font-size:.62rem; font-weight:600; letter-spacing:.07em;
+  text-transform:uppercase; padding:.16rem .45rem; border-radius:3px; vertical-align:.08em;
+}
+.tag.ok{background:var(--accent-soft); color:var(--accent)}
+.tag.warn{background:var(--signal-soft); color:var(--signal)}
+
+/* ── callout ──────────────────────────────────────────── */
+.note{
+  background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--signal);
+  border-radius:4px; padding:1.05rem 1.25rem; font-size:.93rem; line-height:1.55; color:var(--ink-2);
+}
+.note b{color:var(--ink)}
+.note .h{
+  font-family:"Archivo",sans-serif; font-size:.66rem; font-weight:600; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--signal); display:block; margin-bottom:.5rem;
+}
+
+/* ── rollout specimens ────────────────────────────────── */
+.spec{display:grid; gap:1rem; grid-template-columns:1fr}
+@media(min-width:820px){.spec{grid-template-columns:1fr 1fr}}
+.spec > div{
+  background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:1.1rem 1.2rem;
+}
+.spec .hd{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--muted);
+  display:flex; justify-content:space-between; gap:1rem; margin-bottom:.7rem;
+  padding-bottom:.55rem; border-bottom:1px solid var(--line);
+}
+.spec .txt{
+  font-family:"IBM Plex Mono",monospace; font-size:.72rem; line-height:1.65; color:var(--ink-2);
+  word-break:break-word;
+}
+.spec.late .txt{color:var(--signal)}
+
+/* ── chart ────────────────────────────────────────────── */
+.chart{position:relative}
+.chart + .chart{margin-top:.4rem}
+.ct{
+  font-family:"Archivo",sans-serif; font-size:.78rem; font-weight:600; color:var(--ink);
+  margin:0 0 .1rem; display:flex; align-items:baseline; gap:.55rem;
+}
+.ct .u{font-family:"IBM Plex Mono",monospace; font-size:.66rem; font-weight:400; color:var(--muted)}
+.chart svg{min-width:560px}
+.gl{stroke:var(--grid); stroke-width:1}
+.ax{fill:var(--muted); font-family:"IBM Plex Mono",monospace; font-size:9px}
+.dot{stroke:var(--panel); stroke-width:2}
+#tip{
+  position:fixed; pointer-events:none; opacity:0; transition:opacity .1s;
+  background:var(--ink); color:var(--ground); font-family:"IBM Plex Mono",monospace;
+  font-size:.68rem; padding:.35rem .55rem; border-radius:4px; z-index:20; white-space:nowrap;
+}
+#tip.on{opacity:1}
+
+details{
+  background:var(--panel); border:1px solid var(--line); border-radius:6px;
+  padding:.8rem 1.1rem; font-size:.85rem;
+}
+summary{
+  font-family:"Archivo",sans-serif; font-size:.72rem; font-weight:600; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-2); cursor:pointer;
+}
+details[open] summary{margin-bottom:.9rem}
+details .tw{margin:0}
+
+footer{
+  grid-column:1/-1; width:min(1060px,calc(100% - 2.5rem)); margin:4.5rem auto 0;
+  padding-top:1.4rem; border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--muted); line-height:1.7;
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<main>
+
+<header class="masthead">
+  <p class="eyebrow">Build a Reasoning Model · ch07 · section 7.3</p>
+  <h1>The 710-Line RL&nbsp;Loop</h1>
+  <p class="lede">How one Python file runs a complete GRPO training job — and what your own 500-step run reveals about why it collapsed.</p>
+  <div class="meta">
+    <span><b>File</b> submit_03_tracking.py</span>
+    <span><b>Lines</b> 710</span>
+    <span><b>Model</b> Qwen3-0.6B base</span>
+    <span><b>Run</b> 4hfx8n1s</span>
+  </div>
+</header>
+
+<h2><span class="num">01 — THE PREMISE</span>Why it fits in one file</h2>
+
+<p>The reason a single file can run reinforcement learning end to end is that <strong>the RL part is small</strong>. GRPO on verifiable rewards has no replay buffer, no separate value network, no target network, no environment simulator. It is a sampling loop, a comparison, and one backward pass.</p>
+
+<p>What normally makes RL code sprawl — the environment — is here just a string comparison against a known answer. And what would make <em>this</em> file sprawl is deliberately kept outside it: the transformer, the tokenizer, the dataset loader, and the evaluation harness all come from the installed <code>reasoning_from_scratch</code> package. The file contains the algorithm and nothing else.</p>
+
+<figure class="plate">
+  <div class="legend">
+    <span><span class="sw" style="background:var(--accent)"></span>The GRPO algorithm</span>
+    <span><span class="sw" style="background:var(--line-2)"></span>Plumbing &amp; wiring</span>
+    <span><span class="sw" style="background:var(--signal)"></span>Metric sinks</span>
+  </div>
+  <div class="scroll">
+  <svg viewBox="0 0 700 428" role="img" aria-label="The 710 lines of submit_03_tracking.py broken into ten blocks in line order, showing that roughly 300 lines are the GRPO algorithm and the rest is imports, logging and command-line wiring.">
+    <g class="ax" style="font-size:10px" text-anchor="end" fill="currentColor">
+      <text x="66" y="16" opacity=".55">LINES</text>
+    </g>
+    <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor">
+
+      <rect x="76" y="26" width="560" height="30" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <rect x="76" y="26" width="3" height="30" fill="var(--line-2)"/>
+      <text x="66" y="45" text-anchor="end" opacity=".6">1–32</text>
+      <text x="92" y="45" font-weight="600" fill="var(--ink)">header + drift check</text>
+      <text x="330" y="45" opacity=".7">provenance, the five # WANDB sites, how to diff upstream</text>
+
+      <rect x="76" y="60" width="560" height="30" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <rect x="76" y="60" width="3" height="30" fill="var(--line-2)"/>
+      <text x="66" y="79" text-anchor="end" opacity=".6">34–61</text>
+      <text x="92" y="79" font-weight="600" fill="var(--ink)">imports</text>
+      <text x="330" y="79" opacity=".7">torch, wandb, and 5 modules of reasoning_from_scratch</text>
+
+      <rect x="76" y="94" width="560" height="30" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <rect x="76" y="94" width="3" height="30" fill="var(--line-2)"/>
+      <text x="66" y="113" text-anchor="end" opacity=".6">63–97</text>
+      <text x="92" y="113" font-weight="600" fill="var(--ink)">globals · wandb_log · load_env_file</text>
+      <text x="330" y="113" opacity=".7">path placeholders __main__ rebinds per run</text>
+
+      <rect x="76" y="128" width="560" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".4"/>
+      <rect x="76" y="128" width="3" height="30" fill="var(--accent)"/>
+      <text x="66" y="147" text-anchor="end" opacity=".6">99–140</text>
+      <text x="92" y="147" font-weight="600" fill="var(--ink)">sample_response</text>
+      <text x="330" y="147" opacity=".7">token-by-token generation with a KV cache · no grad</text>
+
+      <rect x="76" y="162" width="560" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".4"/>
+      <rect x="76" y="162" width="3" height="30" fill="var(--accent)"/>
+      <text x="66" y="181" text-anchor="end" opacity=".6">143–165</text>
+      <text x="92" y="181" font-weight="600" fill="var(--ink)">sequence_logprob_and_entropy</text>
+      <text x="330" y="181" opacity=".7">the only differentiable quantity · §7.3 adds entropy</text>
+
+      <rect x="76" y="196" width="560" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".4"/>
+      <rect x="76" y="196" width="3" height="30" fill="var(--accent)"/>
+      <text x="66" y="215" text-anchor="end" opacity=".6">167–175</text>
+      <text x="92" y="215" font-weight="600" fill="var(--ink)">reward_rlvr</text>
+      <text x="330" y="215" opacity=".7">the whole environment: 1.0 if \boxed{} grades correct</text>
+
+      <rect x="76" y="230" width="560" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".4"/>
+      <rect x="76" y="230" width="3" height="30" fill="var(--accent)"/>
+      <text x="66" y="249" text-anchor="end" opacity=".6">177–257</text>
+      <text x="92" y="249" font-weight="600" fill="var(--ink)">compute_grpo_loss</text>
+      <text x="330" y="249" opacity=".7">N rollouts → rewards → advantages → one scalar loss</text>
+
+      <rect x="76" y="264" width="560" height="30" rx="3" fill="var(--signal-soft)" stroke="var(--signal)" stroke-opacity=".35"/>
+      <rect x="76" y="264" width="3" height="30" fill="var(--signal)"/>
+      <text x="66" y="283" text-anchor="end" opacity=".6">259–355</text>
+      <text x="92" y="283" font-weight="600" fill="var(--ink)">append_* · save_checkpoint</text>
+      <text x="330" y="283" opacity=".7">every metric written twice: local file and W&amp;B</text>
+
+      <rect x="76" y="298" width="560" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".4"/>
+      <rect x="76" y="298" width="3" height="30" fill="var(--accent)"/>
+      <text x="66" y="317" text-anchor="end" opacity=".6">357–503</text>
+      <text x="92" y="317" font-weight="600" fill="var(--ink)">train_rlvr_grpo</text>
+      <text x="330" y="317" opacity=".7">the outer loop · backward, clip, step, checkpoint, eval</text>
+
+      <rect x="76" y="332" width="560" height="30" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <rect x="76" y="332" width="3" height="30" fill="var(--line-2)"/>
+      <text x="66" y="351" text-anchor="end" opacity=".6">504–710</text>
+      <text x="92" y="351" font-weight="600" fill="var(--ink)">__main__</text>
+      <text x="330" y="351" opacity=".7">18 argparse flags, W&amp;B init, run dir, model load, wiring</text>
+    </g>
+
+    <line x1="76" y1="382" x2="636" y2="382" stroke="currentColor" stroke-opacity=".25"/>
+    <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor">
+      <rect x="76" y="390" width="240" height="20" rx="2" fill="var(--accent)" fill-opacity=".8"/>
+      <rect x="316" y="390" width="76" height="20" rx="2" fill="var(--signal)" fill-opacity=".8"/>
+      <rect x="392" y="390" width="244" height="20" rx="2" fill="var(--line-2)"/>
+      <text x="82" y="404" fill="var(--panel)" font-weight="600">~302 lines algorithm</text>
+      <text x="322" y="404" fill="var(--panel)" font-weight="600">97 sinks</text>
+      <text x="398" y="404" fill="var(--ink)" font-weight="600">~311 lines plumbing</text>
+    </g>
+  </svg>
+  </div>
+  <figcaption><b>Plate 1 — the file in line order.</b> Roughly 300 of the 710 lines are the learning algorithm; the rest is imports, logging, and the command-line surface. The four algorithm blocks are what section 7.3 is actually about — everything else exists so the run is reproducible and observable.</figcaption>
+</figure>
+
+<h2><span class="num">02 — THE BOUNDARY</span>Inline algorithm, imported infrastructure</h2>
+
+<p>"Self-contained" here means <em>no sibling script is imported</em> — not that the file has no dependencies. It still needs the package installed, which is exactly why the cluster job begins with <code>pip install -e .</code>. Drop that line and the pod dies at import.</p>
+
+<figure class="plate">
+  <div class="scroll">
+  <svg viewBox="0 0 700 320" role="img" aria-label="Diagram showing the reasoning_from_scratch package supplying model, tokenizer, dataset and evaluation to submit_03_tracking.py, which itself contains only the four GRPO functions, and writes out to metrics, checkpoints and Weights and Biases.">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+      </marker>
+      <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+      </marker>
+    </defs>
+
+    <rect x="10" y="40" width="196" height="200" rx="5" fill="var(--panel-2)" stroke="var(--line)"/>
+    <text x="108" y="30" text-anchor="middle" font-family="Archivo, sans-serif" font-size="11" font-weight="600" fill="currentColor">INSTALLED PACKAGE</text>
+    <text x="108" y="60" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity=".65">reasoning_from_scratch</text>
+    <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity=".85">
+      <text x="26" y="86">qwen3 · Qwen3Model, KVCache</text>
+      <text x="26" y="106">ch03 · load_model_and_tokenizer</text>
+      <text x="26" y="126">ch03 · evaluate_math500_stream</text>
+      <text x="26" y="146">ch03 · extract_final_candidate</text>
+      <text x="26" y="166">ch03 · grade_answer, render_prompt</text>
+      <text x="26" y="186">ch04 · top_p_filter</text>
+      <text x="26" y="206">ch06 · load_math_train</text>
+    </g>
+    <text x="26" y="228" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".5">the transformer, the data, the grader</text>
+
+    <line x1="206" y1="140" x2="266" y2="140" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#ara)"/>
+    <text x="236" y="132" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--accent)">imports</text>
+
+    <rect x="268" y="40" width="200" height="200" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".45" stroke-width="1.4"/>
+    <text x="368" y="30" text-anchor="middle" font-family="Archivo, sans-serif" font-size="11" font-weight="600" fill="var(--accent)">THIS FILE</text>
+    <text x="368" y="60" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity=".65">submit_03_tracking.py</text>
+    <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor">
+      <text x="284" y="90" font-weight="600">sample_response</text>
+      <text x="284" y="112" font-weight="600">sequence_logprob_and_entropy</text>
+      <text x="284" y="134" font-weight="600">reward_rlvr</text>
+      <text x="284" y="156" font-weight="600">compute_grpo_loss</text>
+      <text x="284" y="178" font-weight="600">train_rlvr_grpo</text>
+    </g>
+    <text x="284" y="206" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".5">the entire learning algorithm,</text>
+    <text x="284" y="220" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".5">written out, not imported</text>
+
+    <line x1="468" y1="140" x2="528" y2="140" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+    <text x="498" y="132" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".7">writes</text>
+
+    <rect x="530" y="40" width="160" height="200" rx="5" fill="var(--panel-2)" stroke="var(--line)"/>
+    <text x="610" y="30" text-anchor="middle" font-family="Archivo, sans-serif" font-size="11" font-weight="600" fill="currentColor">PER-RUN OUTPUT</text>
+    <text x="610" y="60" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".6">runs/&lt;stamp&gt;-&lt;wandb-id&gt;/</text>
+    <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity=".85">
+      <text x="546" y="88">metrics.csv</text>
+      <text x="546" y="108">metrics.txt</text>
+      <text x="546" y="128">outputs.txt</text>
+      <text x="546" y="148">wandb.txt</text>
+      <text x="546" y="168">checkpoints/</text>
+    </g>
+    <rect x="546" y="186" width="128" height="22" rx="3" fill="var(--signal)" fill-opacity=".14" stroke="var(--signal)" stroke-opacity=".4"/>
+    <text x="610" y="201" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--signal)" font-weight="600">+ W&amp;B, live</text>
+
+    <line x1="10" y1="268" x2="690" y2="268" stroke="currentColor" stroke-opacity=".2"/>
+    <text x="10" y="290" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity=".7">The cluster job must therefore run</text>
+    <text x="10" y="306" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--accent)" font-weight="600">pip install -e . --no-deps</text>
+    <text x="196" y="306" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity=".7">before it can import a single line of the left-hand box.</text>
+  </svg>
+  </div>
+  <figcaption><b>Plate 2 — what crosses the boundary.</b> Model architecture, tokenizer, dataset and the MATH-500 grader are imported; the five GRPO functions are written out. The split is why <code>submit_02</code> through <code>submit_06</code> can each be one file: the diff between consecutive files <em>is</em> that section's contribution to the algorithm.</figcaption>
+</figure>
+
+<h2><span class="num">03 — THE MECHANISM</span>What one training step does</h2>
+
+<p>This is the part worth holding in your head. One step consumes <strong>one math problem</strong> and produces <strong>one gradient update</strong>. Everything between is the loop over rollouts.</p>
+
+<figure class="plate">
+  <div class="scroll">
+  <svg viewBox="0 0 760 400" role="img" aria-label="Flow of one GRPO training step: one problem is sampled N times without gradients, each rollout is scored for log-probability with gradients and graded for reward, rewards become group-relative advantages, advantages times log-probabilities form the policy-gradient loss, which is backpropagated, clipped, and applied by the optimizer.">
+    <defs>
+      <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+      </marker>
+      <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+      </marker>
+    </defs>
+
+    <rect x="10" y="20" width="118" height="46" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+    <text x="69" y="40" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">math_data[step]</text>
+    <text x="69" y="55" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".6">problem + answer</text>
+
+    <line x1="128" y1="43" x2="168" y2="43" stroke="currentColor" stroke-width="1.3" marker-end="url(#a2)"/>
+
+    <rect x="170" y="14" width="404" height="196" rx="5" fill="none" stroke="var(--accent)" stroke-opacity=".45" stroke-width="1.3" stroke-dasharray="5 4"/>
+    <text x="182" y="8" font-family="Archivo, sans-serif" font-size="10" font-weight="600" fill="var(--accent)">FOR EACH OF N ROLLOUTS  (--num_rollouts)</text>
+
+    <rect x="186" y="30" width="150" height="52" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+    <text x="261" y="50" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">sample_response</text>
+    <text x="261" y="65" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="currentColor" opacity=".6">KV cache · top-p · T=0.8</text>
+    <rect x="200" y="88" width="122" height="17" rx="8" fill="var(--panel)" stroke="var(--line-2)"/>
+    <text x="261" y="100" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="currentColor" opacity=".75">@torch.no_grad()</text>
+
+    <line x1="336" y1="56" x2="384" y2="56" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#a3)"/>
+    <text x="360" y="48" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="var(--accent)">tokens</text>
+
+    <rect x="386" y="30" width="172" height="52" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".5"/>
+    <text x="472" y="50" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">sequence_logprob</text>
+    <text x="472" y="64" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">_and_entropy</text>
+    <rect x="404" y="88" width="136" height="17" rx="8" fill="var(--accent)" fill-opacity=".16" stroke="var(--accent)" stroke-opacity=".55"/>
+    <text x="472" y="100" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="var(--accent)" font-weight="600">graph IS built here</text>
+
+    <rect x="186" y="128" width="150" height="46" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+    <text x="261" y="147" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">reward_rlvr</text>
+    <text x="261" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="currentColor" opacity=".6">\boxed{} graded → 1.0 / 0.0</text>
+    <line x1="261" y1="105" x2="261" y2="126" stroke="currentColor" stroke-width="1.3" marker-end="url(#a2)"/>
+
+    <text x="386" y="146" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".65">collects per rollout:</text>
+    <text x="386" y="162" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".85">roll_logps · roll_rewards · roll_entropies</text>
+    <text x="386" y="184" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".5">model.eval() for the whole block</text>
+
+    <line x1="372" y1="210" x2="372" y2="238" stroke="currentColor" stroke-width="1.3" marker-end="url(#a2)"/>
+
+    <rect x="132" y="240" width="212" height="54" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+    <text x="238" y="260" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">advantages</text>
+    <text x="238" y="277" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="currentColor" opacity=".7">(r − r.mean()) / (r.std() + 1e−4)</text>
+    <text x="238" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="currentColor" opacity=".5">detached — no gradient path</text>
+
+    <rect x="400" y="240" width="212" height="54" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".5"/>
+    <text x="506" y="260" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600" fill="currentColor">pg_loss</text>
+    <text x="506" y="277" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" fill="currentColor" opacity=".8">−(adv.detach() * logps).mean()</text>
+    <text x="506" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="var(--accent)" opacity=".9">one scalar</text>
+
+    <line x1="344" y1="267" x2="398" y2="267" stroke="currentColor" stroke-width="1.3" marker-end="url(#a2)"/>
+
+    <line x1="506" y1="294" x2="506" y2="322" stroke="currentColor" stroke-width="1.3" marker-end="url(#a2)"/>
+
+    <g font-family="IBM Plex Mono, monospace" font-size="9.5">
+      <rect x="132" y="324" width="128" height="34" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="196" y="345" text-anchor="middle" font-weight="600" fill="currentColor">zero_grad()</text>
+
+      <rect x="272" y="324" width="128" height="34" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="336" y="345" text-anchor="middle" font-weight="600" fill="currentColor">backward()</text>
+
+      <rect x="412" y="324" width="150" height="34" rx="4" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="487" y="345" text-anchor="middle" font-weight="600" fill="currentColor">clip_grad_norm_(1.0)</text>
+
+      <rect x="574" y="324" width="116" height="34" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".5"/>
+      <text x="632" y="345" text-anchor="middle" font-weight="600" fill="currentColor">step()</text>
+    </g>
+    <line x1="272" y1="341" x2="264" y2="341" stroke="currentColor" stroke-width="1.2" marker-start="url(#a2)"/>
+    <line x1="404" y1="341" x2="412" y2="341" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+    <line x1="566" y1="341" x2="574" y2="341" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+
+    <text x="10" y="388" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity=".55">AdamW · lr 1e−5 · one problem in, one weight update out · repeat 500×</text>
+  </svg>
+  </div>
+  <figcaption><b>Plate 3 — one step of <code>train_rlvr_grpo</code>.</b> Note where the gradient lives: generation runs under <code>@torch.no_grad()</code>, and the log-probability is <em>recomputed</em> in a second teacher-forced pass that does build a graph. Advantages are detached, so the only path from loss to weights runs through <code>sequence_logprob_and_entropy</code>. That is the mechanism your <code>trials_12_activations.py</code> and <code>trials_13_shift_by_one.py</code> exist to explain.</figcaption>
+</figure>
+
+<h3>The learning rule, in two lines</h3>
+
+<pre><i># submit_03_tracking.py:220-243</i>
+advantages = (rewards - rewards.mean()) / (rewards.std() + 1e-4)
+pg_loss    = -(advantages.<b>detach</b>() * logps).mean()</pre>
+
+<p>That is the whole of GRPO at this stage. A rollout that beat its peers gets a positive advantage, so the loss pushes its log-probability up; one that lagged gets pushed down. When all N rollouts score identically the advantages are all zero and the step contributes nothing — which happened on <strong>309 of your 500 steps</strong>.</p>
+
+<h2><span class="num">04 — YOUR RUNS</span>What was actually launched</h2>
+
+<p>Seven runs on 23 August, all logged to the <code>rfs-ch07</code> W&amp;B project under <code>abgoswam</code>. Two were submitted to the cluster; the rest ran locally on the 4×A6000 box.</p>
+
+<div class="wide tw">
+<table>
+  <thead><tr><th>Time</th><th>Where</th><th>Script</th><th>Rollouts</th><th>Steps</th><th>W&amp;B run</th></tr></thead>
+  <tbody>
+    <tr><td>16:29</td><td>cuda:1</td><td>submit_02_baseline</td><td class="n">8</td><td class="n">500</td><td><a href="https://wandb.ai/abgoswam/rfs-ch07/runs/epoppdnr">epoppdnr</a></td></tr>
+    <tr><td>16:49</td><td>cuda:1</td><td>submit_02_baseline</td><td class="n">8</td><td class="n">500</td><td><a href="https://wandb.ai/abgoswam/rfs-ch07/runs/e0k1tjb9">e0k1tjb9</a></td></tr>
+    <tr><td>16:50</td><td>cuda:2</td><td>submit_03_tracking</td><td class="n">8</td><td class="n">500</td><td><a href="https://wandb.ai/abgoswam/rfs-ch07/runs/sdnkwm7l">sdnkwm7l</a></td></tr>
+    <tr><td>23:51</td><td>cuda:1</td><td>submit_02_baseline</td><td class="n">4</td><td class="n">500</td><td><a href="https://wandb.ai/abgoswam/rfs-ch07/runs/gnw67345">gnw67345</a></td></tr>
+    <tr><td>23:51</td><td><span class="tag ok">cluster</span></td><td>submit_02_baseline</td><td class="n">8</td><td class="n">500</td><td>not recorded locally</td></tr>
+    <tr><td>23:56</td><td>cuda:2</td><td><b>submit_03_tracking</b></td><td class="n">4</td><td class="n">500</td><td><a href="https://wandb.ai/abgoswam/rfs-ch07/runs/4hfx8n1s"><b>4hfx8n1s</b></a></td></tr>
+    <tr><td>23:59</td><td><span class="tag ok">cluster</span></td><td>submit_03_tracking</td><td class="n">8</td><td class="n">500</td><td>not recorded locally</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note" style="margin-top:1.35rem">
+  <span class="h">Where the cluster runs went</span>
+  The two cluster jobs wrote their outputs to <code>$OUTPUT_DIR</code> on the pod, so no <code>runs/</code> directory and no <code>wandb.txt</code> came back to this machine — <b>their run IDs exist only in W&amp;B and in the pod's stdout</b>. They are in the same <code>rfs-ch07</code> project; filter by the <code>out_dir</code> config value or by start time (23:51 / 23:59) to find them. Everything charted below is the <b>local</b> run <code>4hfx8n1s</code>, the only 500-step tracking run whose metrics are on this box.
+</div>
+
+<h2><span class="num">05 — THE PAYOFF</span>Section 7.3 earns its keep</h2>
+
+<p>Compare the two 23:51/23:56 runs and something clean falls out. They share a seed, a dataset order, and a rollout count — and their <code>loss</code>, <code>reward_avg</code>, and <code>avg_response_len</code> columns are <strong>numerically identical</strong>. The baseline and the tracking script trained the same run.</p>
+
+<p>The only difference is that <code>submit_03</code> also writes <code>adv_avg</code>, <code>adv_std</code>, and <code>entropy_avg</code>. That is the entire contribution of section 7.3: not a better run, but a <em>legible</em> one. Here is what those extra columns bought.</p>
+
+<figure class="plate">
+  <p class="ct">Reward <span class="u">mean fraction of rollouts graded correct</span></p>
+  <div class="scroll"><svg viewBox="0 0 760 150" role="img" aria-label="Reward per 25-step bin falls from about 0.77 early to 0.16 by step 500, noisily.">
+    <g class="gl"><line x1="58" y1="128" x2="742" y2="128"/><line x1="58" y1="73" x2="742" y2="73"/><line x1="58" y1="18" x2="742" y2="18"/></g>
+    <g class="ax" text-anchor="end"><text x="50" y="131">0</text><text x="50" y="76">0.4</text><text x="50" y="21">0.8</text></g>
+    <path d="M58.0,128.0 L58.0,81.4 L94.0,28.4 L130.0,33.5 L166.0,29.6 L202.0,52.9 L238.0,23.2 L274.0,45.2 L310.0,33.5 L346.0,33.5 L382.0,42.6 L418.0,37.4 L454.0,87.9 L490.0,84.0 L526.0,51.6 L562.0,58.1 L598.0,72.4 L634.0,104.7 L670.0,103.4 L706.0,121.5 L742.0,107.3 L742.0,128.0 Z" fill="var(--s1)" fill-opacity=".1"/>
+    <polyline points="58.0,81.4 94.0,28.4 130.0,33.5 166.0,29.6 202.0,52.9 238.0,23.2 274.0,45.2 310.0,33.5 346.0,33.5 382.0,42.6 418.0,37.4 454.0,87.9 490.0,84.0 526.0,51.6 562.0,58.1 598.0,72.4 634.0,104.7 670.0,103.4 706.0,121.5 742.0,107.3" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>
+    <g class="dot pts" fill="var(--s1)" data-unit="reward">
+      <circle cx="58.0" cy="81.4" r="3.2" data-v="0.36" data-i="0"/><circle cx="94.0" cy="28.4" r="3.2" data-v="0.77" data-i="1"/><circle cx="130.0" cy="33.5" r="3.2" data-v="0.73" data-i="2"/><circle cx="166.0" cy="29.6" r="3.2" data-v="0.76" data-i="3"/><circle cx="202.0" cy="52.9" r="3.2" data-v="0.58" data-i="4"/><circle cx="238.0" cy="23.2" r="3.2" data-v="0.81" data-i="5"/><circle cx="274.0" cy="45.2" r="3.2" data-v="0.64" data-i="6"/><circle cx="310.0" cy="33.5" r="3.2" data-v="0.73" data-i="7"/><circle cx="346.0" cy="33.5" r="3.2" data-v="0.73" data-i="8"/><circle cx="382.0" cy="42.6" r="3.2" data-v="0.66" data-i="9"/><circle cx="418.0" cy="37.4" r="3.2" data-v="0.70" data-i="10"/><circle cx="454.0" cy="87.9" r="3.2" data-v="0.31" data-i="11"/><circle cx="490.0" cy="84.0" r="3.2" data-v="0.34" data-i="12"/><circle cx="526.0" cy="51.6" r="3.2" data-v="0.59" data-i="13"/><circle cx="562.0" cy="58.1" r="3.2" data-v="0.54" data-i="14"/><circle cx="598.0" cy="72.4" r="3.2" data-v="0.43" data-i="15"/><circle cx="634.0" cy="104.7" r="3.2" data-v="0.18" data-i="16"/><circle cx="670.0" cy="103.4" r="3.2" data-v="0.19" data-i="17"/><circle cx="706.0" cy="121.5" r="3.2" data-v="0.05" data-i="18"/><circle cx="742.0" cy="107.3" r="3.2" data-v="0.16" data-i="19"/>
+    </g>
+    <text x="742" y="12" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--s1)" font-weight="600">0.16</text>
+  </svg></div>
+
+  <p class="ct" style="margin-top:1.2rem">Entropy <span class="u">mean per-token entropy over the answer · §7.3 adds this</span></p>
+  <div class="scroll"><svg viewBox="0 0 760 150" role="img" aria-label="Entropy per 25-step bin sits flat near 0.12 for the first 250 steps then climbs steeply to 5.2 by step 500.">
+    <g class="gl"><line x1="58" y1="128" x2="742" y2="128"/><line x1="58" y1="73" x2="742" y2="73"/><line x1="58" y1="18" x2="742" y2="18"/></g>
+    <g class="ax" text-anchor="end"><text x="50" y="131">0</text><text x="50" y="76">2.7</text><text x="50" y="21">5.4</text></g>
+    <path d="M58.0,128.0 L58.0,120.4 L94.0,125.8 L130.0,125.7 L166.0,125.6 L202.0,125.5 L238.0,125.4 L274.0,125.3 L310.0,125.2 L346.0,125.0 L382.0,124.6 L418.0,123.0 L454.0,113.1 L490.0,115.7 L526.0,122.1 L562.0,122.5 L598.0,117.4 L634.0,104.1 L670.0,88.8 L706.0,61.9 L742.0,22.2 L742.0,128.0 Z" fill="var(--s2)" fill-opacity=".12"/>
+    <polyline points="58.0,120.4 94.0,125.8 130.0,125.7 166.0,125.6 202.0,125.5 238.0,125.4 274.0,125.3 310.0,125.2 346.0,125.0 382.0,124.6 418.0,123.0 454.0,113.1 490.0,115.7 526.0,122.1 562.0,122.5 598.0,117.4 634.0,104.1 670.0,88.8 706.0,61.9 742.0,22.2" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>
+    <g class="dot pts" fill="var(--s2)" data-unit="entropy">
+      <circle cx="58.0" cy="120.4" r="3.2" data-v="0.37" data-i="0"/><circle cx="94.0" cy="125.8" r="3.2" data-v="0.11" data-i="1"/><circle cx="130.0" cy="125.7" r="3.2" data-v="0.11" data-i="2"/><circle cx="166.0" cy="125.6" r="3.2" data-v="0.12" data-i="3"/><circle cx="202.0" cy="125.5" r="3.2" data-v="0.12" data-i="4"/><circle cx="238.0" cy="125.4" r="3.2" data-v="0.13" data-i="5"/><circle cx="274.0" cy="125.3" r="3.2" data-v="0.13" data-i="6"/><circle cx="310.0" cy="125.2" r="3.2" data-v="0.14" data-i="7"/><circle cx="346.0" cy="125.0" r="3.2" data-v="0.15" data-i="8"/><circle cx="382.0" cy="124.6" r="3.2" data-v="0.17" data-i="9"/><circle cx="418.0" cy="123.0" r="3.2" data-v="0.25" data-i="10"/><circle cx="454.0" cy="113.1" r="3.2" data-v="0.73" data-i="11"/><circle cx="490.0" cy="115.7" r="3.2" data-v="0.60" data-i="12"/><circle cx="526.0" cy="122.1" r="3.2" data-v="0.29" data-i="13"/><circle cx="562.0" cy="122.5" r="3.2" data-v="0.27" data-i="14"/><circle cx="598.0" cy="117.4" r="3.2" data-v="0.52" data-i="15"/><circle cx="634.0" cy="104.1" r="3.2" data-v="1.17" data-i="16"/><circle cx="670.0" cy="88.8" r="3.2" data-v="1.92" data-i="17"/><circle cx="706.0" cy="61.9" r="3.2" data-v="3.24" data-i="18"/><circle cx="742.0" cy="22.2" r="3.2" data-v="5.20" data-i="19"/>
+    </g>
+    <text x="742" y="16" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--s2)" font-weight="600">5.20</text>
+  </svg></div>
+
+  <p class="ct" style="margin-top:1.2rem">Response length <span class="u">mean generated tokens per rollout · cap 1024</span></p>
+  <div class="scroll"><svg viewBox="0 0 760 172" role="img" aria-label="Mean response length per 25-step bin drifts up from about 344 tokens to 795, approaching the 1024-token cap.">
+    <g class="gl"><line x1="58" y1="128" x2="742" y2="128"/><line x1="58" y1="73" x2="742" y2="73"/><line x1="58" y1="18" x2="742" y2="18"/></g>
+    <g class="ax" text-anchor="end"><text x="50" y="131">0</text><text x="50" y="76">425</text><text x="50" y="21">850</text></g>
+    <path d="M58.0,128.0 L58.0,83.5 L94.0,77.0 L130.0,72.5 L166.0,83.2 L202.0,74.1 L238.0,77.3 L274.0,79.8 L310.0,70.1 L346.0,70.1 L382.0,60.7 L418.0,70.8 L454.0,54.4 L490.0,62.1 L526.0,59.1 L562.0,64.2 L598.0,69.3 L634.0,54.4 L670.0,57.3 L706.0,34.0 L742.0,25.1 L742.0,128.0 Z" fill="currentColor" fill-opacity=".07"/>
+    <polyline points="58.0,83.5 94.0,77.0 130.0,72.5 166.0,83.2 202.0,74.1 238.0,77.3 274.0,79.8 310.0,70.1 346.0,70.1 382.0,60.7 418.0,70.8 454.0,54.4 490.0,62.1 526.0,59.1 562.0,64.2 598.0,69.3 634.0,54.4 670.0,57.3 706.0,34.0 742.0,25.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-opacity=".75"/>
+    <g class="dot pts" fill="currentColor" data-unit="tokens">
+      <circle cx="58.0" cy="83.5" r="3.2" data-v="344" data-i="0"/><circle cx="94.0" cy="77.0" r="3.2" data-v="394" data-i="1"/><circle cx="130.0" cy="72.5" r="3.2" data-v="429" data-i="2"/><circle cx="166.0" cy="83.2" r="3.2" data-v="346" data-i="3"/><circle cx="202.0" cy="74.1" r="3.2" data-v="417" data-i="4"/><circle cx="238.0" cy="77.3" r="3.2" data-v="392" data-i="5"/><circle cx="274.0" cy="79.8" r="3.2" data-v="373" data-i="6"/><circle cx="310.0" cy="70.1" r="3.2" data-v="447" data-i="7"/><circle cx="346.0" cy="70.1" r="3.2" data-v="447" data-i="8"/><circle cx="382.0" cy="60.7" r="3.2" data-v="520" data-i="9"/><circle cx="418.0" cy="70.8" r="3.2" data-v="442" data-i="10"/><circle cx="454.0" cy="54.4" r="3.2" data-v="569" data-i="11"/><circle cx="490.0" cy="62.1" r="3.2" data-v="509" data-i="12"/><circle cx="526.0" cy="59.1" r="3.2" data-v="533" data-i="13"/><circle cx="562.0" cy="64.2" r="3.2" data-v="493" data-i="14"/><circle cx="598.0" cy="69.3" r="3.2" data-v="454" data-i="15"/><circle cx="634.0" cy="54.4" r="3.2" data-v="569" data-i="16"/><circle cx="670.0" cy="57.3" r="3.2" data-v="546" data-i="17"/><circle cx="706.0" cy="34.0" r="3.2" data-v="726" data-i="18"/><circle cx="742.0" cy="25.1" r="3.2" data-v="795" data-i="19"/>
+    </g>
+    <g class="ax" text-anchor="middle"><text x="58" y="150">1–25</text><text x="202" y="150">101–125</text><text x="382" y="150">226–250</text><text x="562" y="150">351–375</text><text x="742" y="150">476–500</text></g>
+    <text x="400" y="167" text-anchor="middle" class="ax" opacity=".7">TRAINING STEP</text>
+  </svg></div>
+
+  <figcaption><b>Plate 4 — run <code>4hfx8n1s</code>, 500 steps, 25-step means.</b> Separate panels rather than a shared axis: the three measures have incompatible scales, and overlaying them on twin axes would invent a correspondence the data does not have. Reward is bounded in [0,1], so it saturates near the floor and understates how far the policy has gone; entropy has no such ceiling and keeps climbing. That is the argument for tracking it.</figcaption>
+</figure>
+
+<details class="wide">
+  <summary>Table view — all 20 bins</summary>
+  <div class="tw"><table>
+    <thead><tr><th>Steps</th><th>Reward</th><th>Entropy</th><th>Resp. len</th><th>Loss</th></tr></thead>
+    <tbody>
+      <tr><td>1–25</td><td class="n">0.36</td><td class="n">0.37</td><td class="n">344</td><td class="n">−3.8</td></tr>
+      <tr><td>26–50</td><td class="n">0.77</td><td class="n">0.11</td><td class="n">394</td><td class="n">−0.9</td></tr>
+      <tr><td>51–75</td><td class="n">0.73</td><td class="n">0.11</td><td class="n">429</td><td class="n">−0.8</td></tr>
+      <tr><td>76–100</td><td class="n">0.76</td><td class="n">0.12</td><td class="n">346</td><td class="n">−1.0</td></tr>
+      <tr><td>101–125</td><td class="n">0.58</td><td class="n">0.12</td><td class="n">417</td><td class="n">−3.6</td></tr>
+      <tr><td>126–150</td><td class="n">0.81</td><td class="n">0.13</td><td class="n">392</td><td class="n">−1.0</td></tr>
+      <tr><td>151–175</td><td class="n">0.64</td><td class="n">0.13</td><td class="n">373</td><td class="n">−4.3</td></tr>
+      <tr><td>176–200</td><td class="n">0.73</td><td class="n">0.14</td><td class="n">447</td><td class="n">−2.1</td></tr>
+      <tr><td>201–225</td><td class="n">0.73</td><td class="n">0.15</td><td class="n">447</td><td class="n">−0.8</td></tr>
+      <tr><td>226–250</td><td class="n">0.66</td><td class="n">0.17</td><td class="n">520</td><td class="n">−1.1</td></tr>
+      <tr><td>251–275</td><td class="n">0.70</td><td class="n">0.25</td><td class="n">442</td><td class="n">−9.5</td></tr>
+      <tr><td>276–300</td><td class="n">0.31</td><td class="n">0.73</td><td class="n">569</td><td class="n">−20.4</td></tr>
+      <tr><td>301–325</td><td class="n">0.34</td><td class="n">0.60</td><td class="n">509</td><td class="n">−7.1</td></tr>
+      <tr><td>326–350</td><td class="n">0.59</td><td class="n">0.29</td><td class="n">533</td><td class="n">−4.1</td></tr>
+      <tr><td>351–375</td><td class="n">0.54</td><td class="n">0.27</td><td class="n">493</td><td class="n">−14.1</td></tr>
+      <tr><td>376–400</td><td class="n">0.43</td><td class="n">0.52</td><td class="n">454</td><td class="n">−13.1</td></tr>
+      <tr><td>401–425</td><td class="n"><span class="bad">0.18</span></td><td class="n"><span class="bad">1.17</span></td><td class="n">569</td><td class="n">−27.7</td></tr>
+      <tr><td>426–450</td><td class="n"><span class="bad">0.19</span></td><td class="n"><span class="bad">1.92</span></td><td class="n">546</td><td class="n">−72.8</td></tr>
+      <tr><td>451–475</td><td class="n"><span class="bad">0.05</span></td><td class="n"><span class="bad">3.24</span></td><td class="n">727</td><td class="n">−27.2</td></tr>
+      <tr><td>476–500</td><td class="n"><span class="bad">0.16</span></td><td class="n"><span class="bad">5.20</span></td><td class="n">795</td><td class="n">−673.2</td></tr>
+    </tbody>
+  </table></div>
+</details>
+
+<h2><span class="num">06 — THE EVIDENCE</span>What entropy 5.2 actually looks like</h2>
+
+<p>The metrics say the policy degraded. The rollout log in <code>outputs.txt</code> says how badly. Both specimens below are the model's own generation on a MATH problem, from the same run, 470 steps apart.</p>
+
+<div class="wide spec">
+  <div>
+    <div class="hd"><span>step 30 · reward 1.000</span><span>entropy ≈ 0.11</span></div>
+    <p class="txt">To solve the equation \((x+2)(x-3) = 14\)… Bring all terms to one side to form a quadratic equation: \(x^2 - x - 20 = 0\)… Therefore, the sum of the possible values of \(x\) is: \(\boxed{1}\)</p>
+  </div>
+  <div class="late">
+    <div class="hd"><span>step 500 · reward 0.000</span><span>entropy ≈ 5.20</span></div>
+    <p class="txt">Alright, my dear fellow mathematicians, I have embarked upon a quest to unravel the enigma of whole numbers… tarra delvelldead lentell banimbru offimebol blace isce tlales enseful blaye blandured sire veiceuxtra jugo fart lotho heed dead succede grunda tedule deferpull</p>
+  </div>
+</div>
+
+<p style="margin-top:1.35rem">Reward moved from 0.70 to 0.16 — a factor of four. The text moved from correct algebra to invented words. <strong>Reward alone would have told you the run got worse; it could not have told you the model was destroyed</strong>, because a reward floor of zero looks the same whether the model is confidently wrong or emitting noise. Entropy, response length creeping toward the 1024-token cap, and a loss reaching −673 all say the second thing.</p>
+
+<h2><span class="num">07 — WHAT'S NEXT</span>The rest of chapter 7 is the fix</h2>
+
+<p>This collapse is not a bug in your setup. It is the failure mode the remaining sections exist to prevent, which is why they arrive in the order they do:</p>
+
+<div class="wide tw">
+<table>
+  <thead><tr><th>Section</th><th>Script</th><th>Adds</th><th>Against this failure</th></tr></thead>
+  <tbody>
+    <tr><td>7.3</td><td><b>submit_03_tracking</b></td><td>entropy, adv_avg, adv_std</td><td><span class="tag warn">diagnosis only</span></td></tr>
+    <tr><td>7.4</td><td>submit_04_clip_ratio</td><td>clipped policy ratio</td><td>caps how far one step can move the policy</td></tr>
+    <tr><td>7.5</td><td>submit_05_kl</td><td>KL penalty vs. reference</td><td>anchors the policy to the base model</td></tr>
+    <tr><td>7.6</td><td>submit_06_format_reward</td><td>format reward, &lt;think&gt; tokens</td><td>rewards structure, not just the final answer</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p style="margin-top:1.35rem">Your run drifted without limit because nothing in <code>submit_03</code> penalizes drift — the loss is <code>-(adv * logp).mean()</code> and nothing more. Section 7.4's clip and 7.5's KL term are precisely the two brakes missing from Plate 3. Running <code>submit_05_kl.py</code> on the same seed and overlaying its entropy curve on this one is the experiment that closes the loop.</p>
+
+<footer>
+  Sources · submit_03_tracking.py (710 lines) · runs/20260823-235605-4hfx8n1s/{metrics.csv, outputs.txt, wandb.txt} · jobs.log · wandb/run-20260823_235605-4hfx8n1s/files/wandb-metadata.json<br>
+  Run config · Qwen3-0.6B base · 500 steps · 4 rollouts · max_new_tokens 1024 · temperature 0.8 · top_p 0.9 · seed 42 · AdamW lr 1e−5 · NVIDIA RTX A6000<br>
+  Charts show 25-step means of per-step values; no smoothing beyond the binning.
+</footer>
+
+</main>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var tip=document.getElementById('tip');
+  var bins=[];for(var i=0;i<20;i++){bins.push((i*25+1)+'–'+(i*25+25));}
+  document.querySelectorAll('.pts').forEach(function(g){
+    var unit=g.getAttribute('data-unit');
+    g.querySelectorAll('circle').forEach(function(c){
+      function show(e){
+        var r=c.getBoundingClientRect();
+        tip.textContent='steps '+bins[+c.dataset.i]+'  ·  '+c.dataset.v+' '+unit;
+        tip.classList.add('on');
+        var t=tip.getBoundingClientRect();
+        var x=r.left+r.width/2-t.width/2;
+        tip.style.left=Math.max(8,Math.min(x,window.innerWidth-t.width-8))+'px';
+        tip.style.top=Math.max(8,r.top-t.height-9)+'px';
+      }
+      function hide(){tip.classList.remove('on');}
+      c.setAttribute('tabindex','0');
+      c.addEventListener('mouseenter',show);
+      c.addEventListener('focus',show);
+      c.addEventListener('mouseleave',hide);
+      c.addEventListener('blur',hide);
+      c.style.cursor='crosshair';
+    });
+  });
+  window.addEventListener('scroll',function(){tip.classList.remove('on');},{passive:true});
+})();
+</script>

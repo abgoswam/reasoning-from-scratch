@@ -1,0 +1,302 @@
+<title>Two Loops and One Update</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F5F6F9; --panel:#FFFFFF; --panel-2:#EEF1F6; --line:#DCE0E9; --line-2:#C6CCD9;
+  --ink:#161A24; --ink-2:#4C5464; --muted:#7B8394;
+  --accent:#3D5A9E; --accent-soft:#E4EAF6;
+  --signal:#C25E33; --signal-soft:#F7E7DE;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+    --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+    --accent:#6D8FD4; --accent-soft:#1F2A3D;
+    --signal:#D4784A; --signal-soft:#33241B;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+  --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+  --accent:#6D8FD4; --accent-soft:#1F2A3D;
+  --signal:#D4784A; --signal-soft:#33241B;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55; margin:0; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px; margin:0 auto; padding:2.6rem 1.25rem 4rem}
+
+header{border-bottom:2px solid var(--ink); padding-bottom:1rem; margin-bottom:1.6rem}
+.kick{
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 .55rem;
+}
+h1{font-size:2.15rem; font-weight:700; letter-spacing:-.026em; line-height:1.05; margin:0 0 .55rem}
+.thesis{font-size:1.02rem; color:var(--ink-2); margin:0; max-width:64ch; font-weight:500}
+.facts{
+  display:flex; flex-wrap:wrap; gap:.35rem 1.5rem; margin-top:1rem;
+  font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--muted);
+}
+.facts b{color:var(--accent); font-weight:600}
+
+h2{
+  font-size:.72rem; font-weight:600; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--accent); margin:2.3rem 0 .6rem; display:flex; align-items:center; gap:.7rem;
+}
+h2::after{content:""; flex:1; height:1px; background:var(--line)}
+p{margin:0 0 .7rem; max-width:76ch}
+p:last-child{margin-bottom:0}
+strong{font-weight:600}
+code{
+  font-family:"IBM Plex Mono",monospace; font-size:.85em; background:var(--panel-2);
+  border:1px solid var(--line); border-radius:3px; padding:.08em .3em;
+}
+.gr{color:var(--signal); font-weight:600}
+
+figure{margin:.9rem 0 0; background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:1.1rem 1.15rem .9rem}
+.scroll{overflow-x:auto}
+figure svg{display:block; width:100%; height:auto; min-width:600px; color:var(--ink-2)}
+figcaption{
+  font-size:.72rem; color:var(--muted); margin-top:.85rem; padding-top:.65rem;
+  border-top:1px solid var(--line); max-width:80ch; line-height:1.5;
+}
+figcaption b{color:var(--ink-2)}
+
+pre{
+  font-family:"IBM Plex Mono",monospace; font-size:.75rem; line-height:1.75;
+  background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent);
+  border-radius:4px; padding:.85rem 1rem; overflow-x:auto; margin:.7rem 0 0; color:var(--ink-2);
+}
+pre b{color:var(--ink); font-weight:600}
+pre i{color:var(--muted); font-style:normal}
+pre u{color:var(--signal); text-decoration:none; font-weight:600}
+
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:5px; background:var(--panel); margin-top:.9rem}
+table{border-collapse:collapse; width:100%; font-size:.75rem; min-width:560px}
+th,td{padding:.5rem .8rem; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-size:.63rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); background:var(--panel-2)}
+td{font-family:"IBM Plex Mono",monospace; color:var(--ink-2)}
+td b{color:var(--ink); font-weight:600}
+tr:last-child td{border-bottom:none}
+.yes{color:var(--signal); font-weight:600}
+.no{color:var(--muted)}
+td.w{white-space:normal; font-family:"Archivo",sans-serif; font-size:.76rem}
+
+.cols{display:grid; gap:1rem; grid-template-columns:1fr; margin-top:.9rem}
+@media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:.9rem 1rem}
+.card h3{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; font-weight:600; letter-spacing:.06em;
+  color:var(--accent); margin:0 0 .45rem; text-transform:uppercase;
+}
+.card p{font-size:.83rem; margin:0; color:var(--ink-2)}
+
+ul{margin:.6rem 0 0; padding-left:1.1rem; max-width:76ch}
+li{margin-bottom:.35rem; color:var(--ink-2)}
+li b{color:var(--ink)}
+
+footer{
+  margin-top:2.6rem; padding-top:1rem; border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--muted); line-height:1.65;
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="kick">submit_03_tracking.py · 710 lines · mental map</p>
+  <h1>Two Loops and One Update</h1>
+  <p class="thesis">The control and data flow of a complete RL training run, in one file. Four levels of nesting, two nested loops, one optimizer step per problem.</p>
+  <div class="facts">
+    <span><b>5</b> functions do the learning</span>
+    <span><b>2</b> model calls per rollout</span>
+    <span><b>1</b> tensor carries the gradient</span>
+    <span><b>V</b> = 151,936 vocab</span>
+  </div>
+</header>
+
+<h2>Control flow</h2>
+
+<p>Everything below <code>__main__</code> is four calls deep. The outer loop walks training steps; the inner loop walks rollouts of a single problem. One optimizer step happens per <em>outer</em> iteration — the inner loop only gathers material for it.</p>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 720 246" role="img" aria-label="Call nesting of submit_03_tracking.py: __main__ calls train_rlvr_grpo, which loops over steps and calls compute_grpo_loss, which loops over rollouts calling sample_response, sequence_logprob_and_entropy and reward_rlvr, then returns a loss that the outer loop backpropagates.">
+    <defs><marker id="t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+
+    <g font-family="IBM Plex Mono, monospace" font-size="11">
+      <rect x="8" y="10" width="180" height="26" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="20" y="27" fill="var(--ink)" font-weight="600">__main__</text>
+      <text x="196" y="27" fill="currentColor" opacity=".55" font-size="9.5">:504  argparse, W&amp;B init, model load</text>
+
+      <line x1="24" y1="36" x2="24" y2="52" stroke="currentColor" stroke-opacity=".4"/>
+      <rect x="32" y="52" width="196" height="26" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="44" y="69" fill="var(--ink)" font-weight="600">train_rlvr_grpo</text>
+      <text x="236" y="69" fill="currentColor" opacity=".55" font-size="9.5">:357</text>
+
+      <rect x="44" y="88" width="640" height="98" rx="4" fill="none" stroke="var(--accent)" stroke-opacity=".4" stroke-dasharray="4 3"/>
+      <text x="54" y="102" fill="var(--accent)" font-size="9.5" font-weight="600">OUTER LOOP — for step in range(steps)</text>
+
+      <line x1="60" y1="106" x2="60" y2="118" stroke="currentColor" stroke-opacity=".4"/>
+      <rect x="68" y="118" width="200" height="26" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".45"/>
+      <text x="80" y="135" fill="var(--ink)" font-weight="600">compute_grpo_loss</text>
+      <text x="276" y="135" fill="currentColor" opacity=".55" font-size="9.5">:177</text>
+
+      <rect x="80" y="152" width="592" height="26" rx="3" fill="none" stroke="var(--line-2)" stroke-dasharray="4 3"/>
+      <text x="90" y="169" fill="currentColor" font-size="9.5" font-weight="600" opacity=".8">INNER LOOP — for _ in range(num_rollouts)</text>
+      <text x="330" y="169" fill="currentColor" font-size="9.5">sample_response<tspan opacity=".5"> :99</tspan></text>
+      <text x="452" y="169" fill="currentColor" font-size="9.5">seq_logprob<tspan opacity=".5"> :143</tspan></text>
+      <text x="570" y="169" fill="currentColor" font-size="9.5">reward_rlvr<tspan opacity=".5"> :167</tspan></text>
+
+      <line x1="60" y1="186" x2="60" y2="202" stroke="currentColor" stroke-opacity=".4"/>
+      <rect x="68" y="202" width="616" height="26" rx="3" fill="var(--signal-soft)" stroke="var(--signal)" stroke-opacity=".4"/>
+      <text x="80" y="219" fill="var(--ink)" font-weight="600">zero_grad</text>
+      <text x="160" y="219" fill="currentColor" opacity=".4">→</text>
+      <text x="180" y="219" fill="var(--ink)" font-weight="600">backward</text>
+      <text x="256" y="219" fill="currentColor" opacity=".4">→</text>
+      <text x="276" y="219" fill="var(--ink)" font-weight="600">clip_grad_norm_(1.0)</text>
+      <text x="436" y="219" fill="currentColor" opacity=".4">→</text>
+      <text x="456" y="219" fill="var(--ink)" font-weight="600">optimizer.step()</text>
+      <text x="586" y="219" fill="var(--signal)" font-size="9.5" font-weight="600">once per step</text>
+    </g>
+  </svg>
+  </div>
+  <figcaption><b>The whole program.</b> No callbacks, no trainer class, no framework. The inner loop returns a dict; the outer loop reads <code>stats["loss_tensor"]</code> and takes the step. If that tensor is <code>None</code> — every rollout scored the same, so all advantages are zero — the outer loop skips the update entirely.</figcaption>
+</figure>
+
+<h2>Data flow — one rollout</h2>
+
+<p>The model is called <strong>twice</strong> per rollout, and this is the part worth memorizing: once incrementally with a KV cache to <em>generate</em> tokens, then once on the full sequence to <em>score</em> them. The first call is wrapped in <code>@torch.no_grad()</code>; the second is not. Generation is throwaway; scoring is what learns.</p>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 720 300" role="img" aria-label="Data flow of one rollout: a problem becomes a prompt of P tokens, generation appends G tokens without gradients, a second full-sequence forward pass produces logits of shape P plus G by vocab, from which one scalar log-probability with gradient and one scalar entropy are selected, while the decoded text is graded into a scalar reward.">
+    <defs><marker id="d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="ds" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"/></marker></defs>
+
+    <g font-family="IBM Plex Mono, monospace" font-size="10">
+      <rect x="8" y="26" width="120" height="40" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="68" y="43" text-anchor="middle" fill="var(--ink)" font-weight="600">example</text>
+      <text x="68" y="57" text-anchor="middle" fill="currentColor" opacity=".6">problem, answer</text>
+
+      <line x1="128" y1="46" x2="166" y2="46" stroke="currentColor" stroke-width="1.2" marker-end="url(#d)"/>
+      <text x="147" y="39" text-anchor="middle" fill="currentColor" opacity=".6" font-size="8.5">render</text>
+
+      <rect x="168" y="26" width="120" height="40" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="228" y="43" text-anchor="middle" fill="var(--ink)" font-weight="600">prompt ids</text>
+      <text x="228" y="57" text-anchor="middle" fill="var(--accent)" font-weight="600">[P]</text>
+
+      <line x1="288" y1="46" x2="326" y2="46" stroke="currentColor" stroke-width="1.2" marker-end="url(#d)"/>
+
+      <rect x="328" y="18" width="200" height="56" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="428" y="35" text-anchor="middle" fill="var(--ink)" font-weight="600">sample_response</text>
+      <text x="428" y="49" text-anchor="middle" fill="currentColor" opacity=".65" font-size="9">G incremental forwards, KV cache</text>
+      <text x="428" y="65" text-anchor="middle" fill="currentColor" opacity=".8" font-size="9">@torch.no_grad()</text>
+
+      <line x1="528" y1="46" x2="566" y2="46" stroke="currentColor" stroke-width="1.2" marker-end="url(#d)"/>
+
+      <rect x="568" y="26" width="144" height="40" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="640" y="43" text-anchor="middle" fill="var(--ink)" font-weight="600">token_ids</text>
+      <text x="640" y="57" text-anchor="middle" fill="var(--accent)" font-weight="600">[P+G]</text>
+
+      <path d="M640,66 L640,92" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#d)"/>
+      <path d="M568,46 L548,46 L548,100 L392,100" stroke="currentColor" stroke-width="1.1" fill="none" opacity=".5"/>
+      <text x="470" y="96" text-anchor="middle" fill="currentColor" opacity=".55" font-size="8.5">decoded text</text>
+
+      <rect x="228" y="88" width="164" height="34" rx="3" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="310" y="103" text-anchor="middle" fill="var(--ink)" font-weight="600">reward_rlvr</text>
+      <text x="310" y="116" text-anchor="middle" fill="currentColor" opacity=".65" font-size="9">\boxed{} vs answer</text>
+
+      <rect x="470" y="94" width="242" height="88" rx="3" fill="var(--signal-soft)" stroke="var(--signal)" stroke-opacity=".45"/>
+      <text x="591" y="111" text-anchor="middle" fill="var(--ink)" font-weight="600">sequence_logprob_and_entropy</text>
+      <text x="591" y="126" text-anchor="middle" fill="currentColor" opacity=".7" font-size="9">ONE full-sequence forward</text>
+      <text x="591" y="142" text-anchor="middle" fill="currentColor" font-size="9">logits <tspan fill="var(--accent)" font-weight="600">[P+G, V]</tspan></text>
+      <text x="591" y="156" text-anchor="middle" fill="currentColor" font-size="9">gather → <tspan fill="var(--accent)" font-weight="600">[P+G−1]</tspan> → slice <tspan fill="var(--accent)" font-weight="600">[G]</tspan></text>
+      <text x="591" y="172" text-anchor="middle" fill="var(--signal)" font-size="9" font-weight="600">graph retained</text>
+
+      <line x1="310" y1="122" x2="310" y2="212" stroke="currentColor" stroke-width="1.2" marker-end="url(#d)"/>
+      <line x1="591" y1="182" x2="591" y2="212" stroke="var(--signal)" stroke-width="1.5" marker-end="url(#ds)"/>
+
+      <rect x="228" y="214" width="164" height="34" rx="3" fill="var(--panel)" stroke="var(--line-2)"/>
+      <text x="310" y="229" text-anchor="middle" fill="var(--ink)" font-weight="600">reward · float</text>
+      <text x="310" y="242" text-anchor="middle" fill="currentColor" opacity=".6" font-size="9">1.0 or 0.0</text>
+
+      <rect x="470" y="214" width="242" height="34" rx="3" fill="var(--panel)" stroke="var(--signal)" stroke-opacity=".45"/>
+      <text x="591" y="229" text-anchor="middle" fill="var(--ink)" font-weight="600">logp · scalar &nbsp;+&nbsp; entropy · scalar</text>
+      <text x="591" y="242" text-anchor="middle" fill="var(--signal)" opacity=".9" font-size="9">logp carries requires_grad=True</text>
+
+      <text x="8" y="278" fill="currentColor" opacity=".55" font-size="9">P = prompt tokens &nbsp;·&nbsp; G = generated tokens &nbsp;·&nbsp; V = 151,936 &nbsp;·&nbsp; repeat N times, then reduce</text>
+    </g>
+  </svg>
+  </div>
+  <figcaption><b>Why score separately instead of reusing the generation logits?</b> Because generation runs under <code>no_grad</code> with a KV cache — no graph is retained, and the incremental logits are discarded. Scoring re-runs the whole sequence in one teacher-forced pass so autograd can build a graph over it. That is also why memory peaks during scoring, not generation.</figcaption>
+</figure>
+
+<h2>The gradient ledger</h2>
+
+<p>Only one thing in the entire step is differentiable. Everything else is bookkeeping around it.</p>
+
+<div class="tw">
+<table>
+  <thead><tr><th>Tensor</th><th>Shape</th><th>Grad</th><th class="w">Why</th></tr></thead>
+  <tbody>
+    <tr><td><b>logps</b></td><td>[N]</td><td class="yes">YES</td><td class="w">Stacked per-rollout log-probs — the only path from loss to weights</td></tr>
+    <tr><td>rewards</td><td>[N]</td><td class="no">no</td><td class="w">Built from Python floats via <code>grade_answer</code>; never touched the graph</td></tr>
+    <tr><td>advantages</td><td>[N]</td><td class="no">no</td><td class="w">Derived from rewards, then explicitly <code>.detach()</code>ed in the loss</td></tr>
+    <tr><td>entropies</td><td>[N]</td><td class="no">no</td><td class="w">Collected with <code>.item()</code> — a metric, never part of the objective</td></tr>
+    <tr><td><b>pg_loss</b></td><td>scalar</td><td class="yes">YES</td><td class="w">What <code>.backward()</code> is called on</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><i># :220-243 — the entire learning rule</i>
+rewards    = torch.tensor(roll_rewards, device=device)
+advantages = (rewards - rewards.mean()) / (rewards.std() + 1e-4)
+logps      = torch.stack(roll_logps)              <i># [N], the only grad path</i>
+pg_loss    = -(advantages.<u>detach</u>() * logps).mean()</pre>
+
+<p style="margin-top:.7rem">Advantages are <strong>group-relative</strong>: a rollout is scored against its N peers on the same problem, not against an absolute target. That is the "GR" in GRPO, and it removes the need for a value network. It also means a group where every rollout scores identically produces all-zero advantages and contributes no gradient.</p>
+
+<h2>What the outer loop does besides training</h2>
+
+<div class="cols">
+  <div class="card">
+    <h3>Every step</h3>
+    <p><code>append_step_metrics</code> writes one CSV row and mirrors the same numbers to W&amp;B. Also prints a one-line status to stdout.</p>
+  </div>
+  <div class="card">
+    <h3>Every 10 steps</h3>
+    <p><code>append_sample_logs</code> dumps 3 rollout texts with their rewards and lengths to <code>outputs.txt</code>, and to a W&amp;B table.</p>
+  </div>
+  <div class="card">
+    <h3>Every <code>checkpoint_every</code></h3>
+    <p><code>save_checkpoint</code> writes a <code>.pth</code>; if <code>--eval_on_checkpoint</code> is set, runs MATH-500 and records accuracy.</p>
+  </div>
+  <div class="card">
+    <h3>On Ctrl-C</h3>
+    <p>The loop catches <code>KeyboardInterrupt</code>, saves a checkpoint tagged <code>interrupt</code>, and returns the model rather than losing the run.</p>
+  </div>
+</div>
+
+<h2>Why one file is enough</h2>
+
+<ul>
+  <li><b>No environment.</b> The "env" is <code>extract_final_candidate</code> plus <code>grade_answer</code> — nine lines. Everything that normally makes RL code sprawl is a string comparison here.</li>
+  <li><b>No value network, no replay buffer, no target network.</b> Group-relative advantages replace the critic; every rollout is consumed by the step that generated it and then discarded.</li>
+  <li><b>The infrastructure is imported.</b> Transformer, tokenizer, dataset loader and MATH-500 grader all come from <code>reasoning_from_scratch</code>. Only the algorithm is written out — which is what makes the diff between <code>submit_02</code> and <code>submit_03</code> readable as exactly one section's contribution.</li>
+</ul>
+
+<footer>
+  Line numbers refer to ch07/01_main-chapter-code/submit_03_tracking.py · Qwen3-0.6B base · AdamW lr 1e−5 · defaults: 8 rollouts, 512 new tokens, T 0.8, top-p 0.9<br>
+  Companion: <b>The 710-Line RL Loop</b> — the same file plus what run 4hfx8n1s revealed.
+</footer>
+
+</div>
