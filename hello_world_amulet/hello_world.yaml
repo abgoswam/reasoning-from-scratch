@@ -1,0 +1,26 @@
+# Amulet config file. Docs: https://amulet-docs.azurewebsites.net/config_file.html
+description: Hello world job for reasoning-from-scratch on the SA H100 Singularity cluster
+
+target:
+  service: manifold  # run "amlt target list manifold" to see available targets
+  name: ai-frontiers-sa-vc
+  workspace_name: ai-frontiers-sa-ws
+
+environment:
+  registry: aifrontierssacr.azurecr.io
+  image: nvidia25.11-pytorch2.10.0-te2.13-deepspeed0.18.9-fa2main-vllm0.18.0:20260415
+
+code:
+  local_dir: $CONFIG_DIR/src
+
+jobs:
+  - name: hello-world
+    priority: high
+    sku: 80G1-H100  # smallest bookable slice on this VC ("amlt cache instance-type -s NDH100v5")
+    command:
+      - set -e -o pipefail
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python hello.py --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"

@@ -1,0 +1,31 @@
+# Amulet config file. Docs: https://amulet-docs.azurewebsites.net/config_file.html
+# Same job as hello_world.yaml, aimed at baltic01 instead of ai-frontiers-sa-vc.
+# The only functional differences: target.name, and a Manifold platform image.
+# A platform image is a short alias with no registry, resolved per-target by
+# Singularity, so nothing is staged across regions. Pulling from our own ACR to
+# this cluster does work (see baltic_acr.yaml) but a multi-GB image has to travel
+# southafricanorth -> eastus2 first, which dominates the queue time.
+description: Hello world on the shared GCR baltic01 H100 cluster
+
+target:
+  service: manifold
+  name: baltic01
+  workspace_name: ai-frontiers-sa-ws  # the SA workspace drives this GCR cluster fine
+
+environment:
+  image: amlt-sing/acpt-torch2.8.x-py3.10-cuda12.6-ubuntu22.04
+
+code:
+  local_dir: $CONFIG_DIR/src
+
+jobs:
+  - name: hello-baltic
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python hello.py --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
