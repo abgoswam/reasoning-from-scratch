@@ -1,0 +1,151 @@
+# Amulet config file. Docs: https://amulet-docs.azurewebsites.net/config_file.html
+# RLVR GRPO training from ch07, ported from submit_job_cluster.sh (bonete61).
+#
+# Three jobs, submitted one at a time with a :selector. ALWAYS pass a selector --
+# a bare `amlt run train.yaml` would submit all three.
+#
+#   :smoke        2 steps, no W&B   proves upload/install/downloads/GPU/output
+#   :smoke-wandb  2 steps, W&B      proves the node can reach the W&B endpoint
+#   :baseline     submit_02_baseline.py  500 steps, W&B
+#   :tracking     submit_03_tracking.py  500 steps, W&B
+description: ch07 RLVR GRPO training on a single H100
+
+target:
+  service: manifold
+  name: baltic01
+  workspace_name: ai-frontiers-sa-ws
+
+# Platform image: torch 2.8 satisfies pyproject (>=2.7.1,<2.11) and py3.10 satisfies
+# (>=3.10,<3.15). The model is hand-written torch, so the team image's TE/DeepSpeed/
+# vLLM extras are unused -- and this image needs no cross-region staging.
+environment:
+  image: amlt-sing/acpt-torch2.8.x-py3.10-cuda12.6-ubuntu22.04
+
+# The repo root, so `pip install -e .` can see pyproject.toml + README.md + LICENSE
+# and the scripts can import reasoning_from_scratch. Everything heavy is excluded:
+# weights, datasets and outputs are fetched or produced on the node. ~1.7 MB.
+code:
+  local_dir: $CONFIG_DIR/..
+  ignore:
+    - "*.pth"
+    - qwen3/
+    - runs/
+    - wandb/
+    - math_train.json
+    - math500_test.json
+    - .env
+    - ch01/
+    - ch02/
+    - ch03/
+    - ch04/
+    - ch05/
+    - ch06/
+    - ch08/
+    - chC/
+    - chD/
+    - chE/
+    - chF/
+    - chG/
+    - tests/
+    - "*.ipynb"
+    - "*.egg-info/"
+    - .pytest_cache/
+    - _reports/
+    - hello_world_amulet/
+    - hello_rfs_amulet/
+
+jobs:
+  - name: smoke
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - python -m site
+      - python -m pip list -v
+      - python -c "import torch;print('TORCH',torch.__version__,'cuda',torch.cuda.is_available())"
+      - python -c "import reasoning_from_scratch as m;print('RFS',m.__file__)"
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_03_tracking.py --steps 2 --num_rollouts 2 --max_new_tokens 128 --no_wandb --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+
+  # Same 2 steps as :smoke but with W&B enabled. Deliberately lean on diagnostics
+  # -- the install path is already proven, so the only new question here is
+  # whether a baltic01 node can reach the W&B endpoint. The scripts abort before
+  # loading the model if it cannot, so this fails in seconds rather than minutes.
+  - name: smoke-wandb
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_03_tracking.py --steps 2 --num_rollouts 2 --max_new_tokens 128 --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_BASE_URL: $WANDB_BASE_URL
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb
+
+  - name: baseline
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - python -m site
+      - python -m pip list -v
+      - python -c "import torch;print('TORCH',torch.__version__,'cuda',torch.cuda.is_available())"
+      - python -c "import reasoning_from_scratch as m;print('RFS',m.__file__)"
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_02_baseline.py --steps 500 --max_new_tokens 1024 --num_rollouts 8 --eval_on_checkpoint 128 --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_BASE_URL: $WANDB_BASE_URL
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb
+
+  - name: tracking
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - python -m site
+      - python -m pip list -v
+      - python -c "import torch;print('TORCH',torch.__version__,'cuda',torch.cuda.is_available())"
+      - python -c "import reasoning_from_scratch as m;print('RFS',m.__file__)"
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_03_tracking.py --steps 500 --max_new_tokens 1024 --num_rollouts 8 --eval_on_checkpoint 128 --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_BASE_URL: $WANDB_BASE_URL
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb

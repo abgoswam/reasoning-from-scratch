@@ -1,0 +1,41 @@
+# Amulet config file. Docs: https://amulet-docs.azurewebsites.net/config_file.html
+# A long-lived interactive box on baltic01, held open for `amlt ssh`.
+#
+# The container stays up because `sleep infinity` is the foreground process. A
+# GPU keepalive runs in the background so the cluster does not reap the job for
+# having an idle GPU. The keepalive is wrapped in a respawn loop: if it dies the
+# GPU would go idle and the job would be reaped, which would look like an
+# unexplained disappearance.
+#
+# This job runs until cancelled: amlt cancel <experiment> :interactive-fast
+description: Interactive H100 box on baltic01 with a platform image (fast start)
+
+target:
+  service: manifold
+  name: baltic01
+  workspace_name: ai-frontiers-sa-ws
+
+# See interactive.yaml for the team-image variant (torch 2.10, slow cold start).
+# Manifold platform image: short alias, no registry, resolved per-target by
+# Singularity so nothing is staged across regions. Starts in ~5 min regardless
+# of which node it lands on. Ships torch 2.8 rather than the team image's 2.10.
+environment:
+  image: amlt-sing/acpt-torch2.8.x-py3.10-cuda12.6-ubuntu22.04
+
+code:
+  local_dir: $CONFIG_DIR/src
+
+jobs:
+  - name: interactive-fast
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - while true; do python gpu_keepalive.py --interval 60 --burst 5; echo "keepalive exited, respawning in 5s"; sleep 5; done 2>&1 | tee -a "$$AMLT_OUTPUT_DIR/keepalive.log" &
+      - echo "interactive box up on $$(hostname) - keepalive backgrounded, now idling for ssh"
+      - nvidia-smi
+      - sleep infinity
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"

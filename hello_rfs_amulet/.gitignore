@@ -1,0 +1,10 @@
+# machine-specific: absolute paths to this folder
+.amltconfig
+# credentials
+.env
+# amlt scratch and downloaded results
+amlt/
+amlt-results/
+# local run ledger written by run.sh, plus its flock file
+RUNS.md
+RUNS.md.lock

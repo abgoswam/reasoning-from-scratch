@@ -149,9 +149,9 @@ footer{
   <p class="thesis">A Singularity job is five separate Azure components that have to cooperate. Knowing which one you are looking at — and which subscription it sits in — explains both where a job runs cleanly and where it stalls.</p>
   <div class="facts">
     <span><b>5</b> components per job</span>
-    <span><b>3</b> jobs passed</span>
-    <span><b>2</b> clusters</span>
-    <span class="warn">1 image rule that matters</span>
+    <span><b>2</b> clusters, both verified</span>
+    <span><b>2</b> meanings of "queued"</span>
+    <span class="warn">ssh is a submit-time decision</span>
   </div>
 </header>
 
@@ -277,20 +277,21 @@ subscription keeps four of the five where they were and moves only the compute.<
   <text class="t2" x="42" y="418">small image from your ACR</text>
   <text class="tm" x="330" y="418">~50 MB, cross-region</text>
   <text class="t2" x="640" y="418">queued 10m → PASS</text>
-  <circle cx="26" cy="436" r="5" fill="var(--signal)"/>
+  <circle cx="26" cy="436" r="5" fill="var(--ok)"/>
   <text class="t2" x="42" y="440">the team training image</text>
   <text class="tm" x="330" y="440">multi-GB CUDA/vLLM, cross-region</text>
-  <text class="ts" x="640" y="440">30m queued — unresolved</text>
+  <text class="t2" x="640" y="440">~70m cold, ~10m warm → PASS</text>
 </svg>
 </div>
-<figcaption><b>The registry is the only component affected by the move</b>, and it is affected by <em>distance</em>, not permission. The identity, storage account and workspace all function unchanged from a node 8000 km away. The third row is not a demonstrated failure — that job was cancelled at 30 minutes, establishing only that staging had not completed by then.</figcaption>
+<figcaption><b>The registry is the only component affected by the move</b>, and it is affected by <em>distance</em>, not permission. The identity, storage account and workspace all function unchanged from a node 8000 km away. The third row does complete: left alone it staged for roughly 70 minutes and then ran normally. Cold staging is a delay, not a barrier.</figcaption>
 </figure>
 
-<p class="note"><b>Why a long image pull looks like a stuck queue.</b> Singularity reports image
-staging as <code>queued</code>, and the status can even flap <code>queued → running → queued</code>
-while it settles. So "queued for ages on a cluster with free quota" does not mean the scheduler is
-ignoring you — it usually means a large image is still being staged. Check
-<code>amlt target info -t &lt;vc&gt;</code> first: if quota is free, suspect the image.</p>
+<p class="note"><b><code>queued</code> means two different things.</b> It covers both <em>waiting
+for a free node</em> and <em>staging the image onto one</em>, and nothing in the CLI distinguishes
+them. The status can even flap <code>queued → running → queued</code> while an image settles.
+<b class="bad">Do not read <code>amlt target info</code> as cluster occupancy</b> — it reports
+<em>your</em> consumption against <em>your</em> entitlement, so <code>3 / 96</code> means three of
+your own jobs, and says nothing about how many nodes other people are using.</p>
 
 <div class="cols">
   <div class="card ok">
@@ -299,7 +300,7 @@ ignoring you — it usually means a large image is still being staged. Check
   </div>
   <div class="card alert">
     <h3>If you need your own image</h3>
-    <p>It works, but staging a multi-GB image cross-region is slow. Budget for it, or replicate the image into a registry near the target cluster.</p>
+    <p>It works — cold staging a multi-GB image took ~70 min, then ~10 min on a node that already had it. The cache is <b>per node</b>, so a later job landing elsewhere pays full price again.</p>
   </div>
 </div>
 <h2>3 · Concepts — the vocabulary</h2>
@@ -584,8 +585,8 @@ single global default.</p>
   <text class="tm" x="396" y="128">the only productive state</text>
   <text class="tm" x="584" y="112">results in blob</text>
   <line class="ln" x1="20" y1="156" x2="880" y2="156"/>
-  <text class="ts" x="20" y="178">`queued` is overloaded: it covers both "no free GPUs" and "still fetching your image".</text>
-  <text class="tm" x="20" y="198">Check quota first — free quota plus a long queue points at the image, not the scheduler.</text>
+  <text class="ts" x="20" y="178">`queued` is overloaded: it covers both "no free node" and "still fetching your image".</text>
+  <text class="tm" x="20" y="198">Nothing in the CLI separates the two. A platform image removes only the staging half.</text>
   <text class="tm" x="20" y="222">amlt watch &lt;exp&gt; blocks until a terminal state and notifies you — use it instead of polling.</text>
 </svg>
 </div>
@@ -746,7 +747,7 @@ single global default.</p>
 <tr><td class="w">image</td><td>aifrontierssacr team image</td><td><b>amlt-sing/acpt-torch2.8.x</b></td></tr>
 <tr><td class="w">identity</td><td>ai-frontiers-id</td><td><b>same</b></td></tr>
 <tr><td class="w">storage</td><td>aifrontierssadata</td><td><b>same</b></td></tr>
-<tr><td class="w">typical queue</td><td>long — VC often at 224/224</td><td class="good">~5 min — 96 GPUs, mostly free</td></tr>
+<tr><td class="w">observed queue</td><td>tens of minutes when the VC is saturated</td><td class="w">5 min to ~1 hour — varies with node contention</td></tr>
 <tr><td class="w">torch in image</td><td>2.10.0+cu130</td><td>2.8.0+cu126</td></tr>
 </table>
 </div>
@@ -770,7 +771,126 @@ platform image. Use <code>hello_world.yaml</code> when you need the team image's
 </table>
 </div>
 
-<h2>12 · Cluster and image compatibility</h2>
+<h2>12 · Interactive jobs and SSH</h2>
+
+<p>A batch job ends when its command ends. An interactive box is the opposite: it exists to stay up
+so a person can log into it. That needs two things the cluster does not provide by default — a
+process that never exits, and enough GPU activity that the cluster does not reclaim the node.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 400" role="img" aria-label="Anatomy of an interactive job: foreground sleep, background GPU keepalive, and the reaper">
+  <defs>
+    <marker id="i1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+    <marker id="i2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"/></marker>
+  </defs>
+
+  <rect class="s-box" x="16" y="112" width="176" height="62" rx="4"/>
+  <text class="lbl" x="30" y="132">YOUR LAPTOP</text>
+  <text class="t" x="30" y="152">amlt ssh &lt;exp&gt; :&lt;job&gt;</text>
+  <text class="tm" x="30" y="168">needs VPN / corpnet</text>
+  <line class="ar" x1="196" y1="143" x2="234" y2="143" marker-end="url(#i1)"/>
+
+  <rect x="240" y="40" width="420" height="220" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text class="lbl" x="254" y="60" fill="var(--accent)">THE JOB CONTAINER</text>
+
+  <rect class="s-acc" x="256" y="76" width="184" height="80" rx="4"/>
+  <text class="lbl" x="268" y="96">FOREGROUND</text>
+  <text class="t" x="268" y="116">sleep infinity</text>
+  <text class="tm" x="268" y="134">holds the container</text>
+  <text class="tm" x="268" y="148">open — if it exits,</text>
+
+  <rect class="s-ok" x="460" y="76" width="184" height="80" rx="4"/>
+  <text class="lbl" x="472" y="96">BACKGROUND</text>
+  <text class="t" x="472" y="116">gpu_keepalive.py</text>
+  <text class="tm" x="472" y="134">in a respawn loop so</text>
+  <text class="tm" x="472" y="148">a crash self-heals</text>
+
+  <text class="ts" x="268" y="176">everything dies</text>
+
+  <line class="ar" x1="552" y1="160" x2="552" y2="196" marker-end="url(#i1)"/>
+  <rect class="s-box" x="460" y="200" width="184" height="46" rx="4"/>
+  <text class="t2" x="472" y="220">GPU: 5s of matmul</text>
+  <text class="t2" x="472" y="236">every 60s</text>
+
+  <rect class="s-sig" x="700" y="176" width="184" height="94" rx="4"/>
+  <text class="ts" x="714" y="196">CLUSTER REAPER</text>
+  <text class="tm" x="714" y="216">reclaims a job whose</text>
+  <text class="tm" x="714" y="232">GPU sits idle past a</text>
+  <text class="tm" x="714" y="248">short threshold</text>
+  <text class="tm" x="714" y="264">(~2 min)</text>
+  <line class="arS" x1="696" y1="223" x2="652" y2="223" marker-end="url(#i2)"/>
+
+  <line class="ln" x1="16" y1="292" x2="884" y2="292"/>
+  <text class="lbl" x="16" y="314">DECIDED AT SUBMIT TIME — NEITHER CAN BE ADDED TO A RUNNING JOB</text>
+  <circle cx="26" cy="338" r="5" fill="var(--signal)"/>
+  <text class="t2" x="42" y="342">amlt run -i</text>
+  <text class="tm" x="200" y="342">Singularity enables sshd only for jobs declared interactive</text>
+  <circle cx="26" cy="364" r="5" fill="var(--signal)"/>
+  <text class="t2" x="42" y="368">a key in ~/.ssh</text>
+  <text class="tm" x="200" y="368">the first key found is sent with the job; no key = ssh silently disabled</text>
+  <text class="ts" x="42" y="392">Miss either one and `amlt ssh` waits forever on "Waiting for ssh information".</text>
+</svg>
+</div>
+<figcaption><b>The two halves are independent.</b> <code>sleep infinity</code> keeps the container from exiting; the keepalive keeps the node from being reclaimed. Omit the keepalive and the job is taken away while apparently healthy. Omit <code>sleep infinity</code> and the container exits immediately, taking the backgrounded keepalive with it.</figcaption>
+</figure>
+
+<h3 class="sub">Prerequisites for <code>amlt ssh</code></h3>
+
+<div class="tw">
+<table>
+<tr><th>Requirement</th><th class="w">Detail</th></tr>
+<tr><td><b>amlt run -i</b></td><td class="w">Singularity enables sshd only on jobs declared interactive. A job submitted without <code>-i</code> can never be reached, however healthy it looks.</td></tr>
+<tr><td><b>a key in ~/.ssh</b></td><td class="w">Amulet sends the first key it finds <em>at submission</em>. <b class="bad">If none exists, ssh is silently disabled</b> for that job — no warning at submit, and <code>amlt ssh</code> simply hangs later.</td></tr>
+<tr><td>VPN / corpnet</td><td class="w">Required to reach Singularity nodes at all.</td></tr>
+<tr><td>a real key file</td><td class="w">Keys forwarded through ssh-agent are not supported.</td></tr>
+<tr><td class="bad">no retrofit</td><td class="w">Both conditions are fixed at submit time. A running job that lacks them must be cancelled and resubmitted.</td></tr>
+</table>
+</div>
+
+<h3 class="sub">The shape of the job</h3>
+
+<pre>jobs:
+  - name: interactive
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - <b>while true; do python gpu_keepalive.py --interval 60 --burst 5; sleep 5; done</b>
+          2&gt;&amp;1 | tee -a "$$AMLT_OUTPUT_DIR/keepalive.log" <b>&amp;</b>
+      - nvidia-smi
+      - <b>sleep infinity</b></pre>
+
+<p>The keepalive runs a short burst of large matrix multiplications each minute rather than one
+quick operation, so that utilization sampling cannot miss it — roughly an 8% duty cycle against a
+two-minute idle threshold, with two cycles inside every window. It is wrapped in a respawn loop
+because a crashed keepalive would let the GPU fall idle and the job be reclaimed, which presents as
+an unexplained disappearance rather than an error.</p>
+
+<p><code>set -e</code> does not protect a background process, and <code>tee</code> rather than a
+plain redirect keeps the heartbeat visible in <code>amlt logs view</code> as well as persisted to
+blob storage.</p>
+
+<h3 class="sub">Working with the box</h3>
+
+<pre><i>submit — note the -i</i>
+amlt run <b>-i</b> interactive.yaml :interactive &lt;experiment&gt; --sla Premium --yes
+
+<i>confirm the heartbeat before relying on it</i>
+amlt logs view -n 40 &lt;experiment&gt; :interactive
+
+<i>connect, optionally forwarding a port</i>
+amlt ssh &lt;experiment&gt; :interactive
+amlt ssh &lt;experiment&gt; :interactive -o "-L 8888:localhost:8888"
+
+<i>nothing reclaims it but you</i>
+amlt cancel &lt;experiment&gt; :interactive</pre>
+
+<p class="note"><b>An interactive box holds its GPU until cancelled.</b> There is no timeout and no
+idle expiry once the keepalive is doing its job — that is the point of it, and also the hazard. On a
+shared cluster, cancel what you are not using.</p>
+
+<h2>13 · Cluster and image compatibility</h2>
 
 <p>Which combinations of cluster, workspace and image actually produce a running job. The image
 column is the only one that changes the outcome once the workspace is one you can submit through.</p>
@@ -778,10 +898,10 @@ column is the only one that changes the outcome once the workspace is one you ca
 <div class="tw">
 <table>
 <tr><th>Cluster</th><th>Workspace</th><th>Image</th><th>Result</th><th class="w">Notes</th></tr>
-<tr><td>ai-frontiers-sa-vc</td><td>ai-frontiers-sa-ws</td><td>team ACR, in-region</td><td class="good">works</td><td class="w">The co-located stack. Queue length tracks VC occupancy, often 224/224.</td></tr>
+<tr><td>ai-frontiers-sa-vc</td><td>ai-frontiers-sa-ws</td><td>team ACR, in-region</td><td class="good">works</td><td class="w">The co-located stack. No staging cost; queue length is pure node contention.</td></tr>
 <tr><td>baltic01</td><td>ai-frontiers-sa-ws</td><td>platform image</td><td class="good">works</td><td class="w">~5 min queue. The recommended combination for a far cluster.</td></tr>
 <tr><td>baltic01</td><td>ai-frontiers-sa-ws</td><td>small ACR, cross-region</td><td class="good">works</td><td class="w">~10 min queue for a ~50 MB image. Proves the cross-subscription pull path is open.</td></tr>
-<tr><td>baltic01</td><td>ai-frontiers-sa-ws</td><td>multi-GB ACR, cross-region</td><td class="bad">unresolved</td><td class="w">Still <code>queued</code> after 30 min, then cancelled. Staging time, not a permission wall.</td></tr>
+<tr><td>baltic01</td><td>ai-frontiers-sa-ws</td><td>multi-GB ACR, cross-region</td><td class="good">works</td><td class="w">~70 min to stage onto a cold node, ~10 min onto a warm one. Delay only.</td></tr>
 <tr><td>baltic01</td><td>gcrllm2ws</td><td>any</td><td class="bad">rejected</td><td class="w">Fails at submit: <code>datastores/write</code> denied. Needs the AzureML Data Scientist role.</td></tr>
 </table>
 </div>
@@ -798,12 +918,13 @@ column is the only one that changes the outcome once the workspace is one you ca
 
 <h3 class="sub">What remains unknown</h3>
 
-<p>Whether a multi-GB image would eventually stage to a distant cluster given enough time. The
-observation is bounded at 30 minutes, at which point the job was cancelled. Nothing indicates a hard
-failure — no error was raised and quota remained allocated throughout. Treat it as an open question
-rather than a limitation.</p>
+<p>How far the image cache reaches. A multi-GB image took ~70 minutes to stage onto a cold node and
+~10 minutes on a later submission, which is consistent with either a per-node cache that happened to
+be reused or a cluster-level mirror. A third submission queued far longer again, which favours the
+per-node reading. Plan for the cold cost recurring; treat a fast start as luck rather than
+entitlement.</p>
 
-<h2>13 · Porting the training job</h2>
+<h2>14 · Porting the training job</h2>
 
 <p>The remaining work is to run <code>submit_03_tracking.py</code> the way
 <code>submit_job_cluster.sh</code> runs it on bonete61. Four changes to
