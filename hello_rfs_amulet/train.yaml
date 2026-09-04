@@ -7,7 +7,10 @@
 #   :smoke        2 steps, no W&B   proves upload/install/downloads/GPU/output
 #   :smoke-wandb  2 steps, W&B      proves the node can reach the W&B endpoint
 #   :baseline     submit_02_baseline.py  500 steps, W&B
-#   :tracking     submit_03_tracking.py  500 steps, W&B
+#   :tracking     submit_03_tracking.py       500 steps, W&B  (7.3 metrics)
+#   :clip-ratio   submit_04_clip_ratio.py     500 steps, W&B  (7.4 clipped ratios)
+#   :kl           submit_05_kl.py             500 steps, W&B  (7.5 KL term)
+#   :format       submit_06_format_reward.py  500 steps, W&B  (7.6 format reward)
 description: ch07 RLVR GRPO training on a single H100
 
 target:
@@ -141,6 +144,75 @@ jobs:
       - cd ch07/01_main-chapter-code
       - mkdir -p "$$AMLT_OUTPUT_DIR"
       - python submit_03_tracking.py --steps 500 --max_new_tokens 1024 --num_rollouts 8 --eval_on_checkpoint 128 --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_BASE_URL: $WANDB_BASE_URL
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb
+
+  # Section 7.4 -- clipped policy ratios (clip_eps 10.0, inner_epochs 2). New flags beyond :tracking are left at each script's own defaults,
+  # which differ deliberately between sections.
+  - name: clip-ratio
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_04_clip_ratio.py --steps 500 --max_new_tokens 1024 --num_rollouts 8 --eval_on_checkpoint 128 --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_BASE_URL: $WANDB_BASE_URL
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb
+
+  # Section 7.5 -- KL loss term (kl_coeff 0.001). New flags beyond :tracking are left at each script's own defaults,
+  # which differ deliberately between sections.
+  - name: kl
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_05_kl.py --steps 500 --max_new_tokens 1024 --num_rollouts 8 --eval_on_checkpoint 128 --out_dir "$$AMLT_OUTPUT_DIR"
+    submit_args:
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_BASE_URL: $WANDB_BASE_URL
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb
+
+  # Section 7.6 -- explicit format reward for <think> tokens. New flags beyond :tracking are left at each script's own defaults,
+  # which differ deliberately between sections.
+  - name: format
+    priority: high
+    sku: 80G1-H100
+    command:
+      - set -e -o pipefail
+      - export PYTHONUSERBASE=/tmp/amlt-user
+      - export PATH="$$PYTHONUSERBASE/bin:$$PATH"
+      - python -m pip install --user -e . --no-deps --quiet
+      - python -m pip install --user --quiet tokenizers requests wandb sympy
+      - cd ch07/01_main-chapter-code
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - python submit_06_format_reward.py --steps 500 --max_new_tokens 1024 --num_rollouts 8 --eval_on_checkpoint 128 --out_dir "$$AMLT_OUTPUT_DIR"
     submit_args:
       env:
         AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
