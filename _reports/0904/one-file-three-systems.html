@@ -1,0 +1,430 @@
+<title>One File, Three Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F5F6F9; --panel:#FFFFFF; --panel-2:#EEF1F6; --line:#DCE0E9; --line-2:#C6CCD9;
+  --ink:#161A24; --ink-2:#4C5464; --muted:#7B8394;
+  --accent:#3D5A9E; --accent-soft:#E4EAF6;
+  --signal:#C25E33; --signal-soft:#F7E7DE;
+  --ok:#2F7A5B; --ok-soft:#DFF0E8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+    --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+    --accent:#6D8FD4; --accent-soft:#1F2A3D;
+    --signal:#D4784A; --signal-soft:#33241B;
+    --ok:#5FAE88; --ok-soft:#17281F;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+  --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+  --accent:#6D8FD4; --accent-soft:#1F2A3D;
+  --signal:#D4784A; --signal-soft:#33241B;
+  --ok:#5FAE88; --ok-soft:#17281F;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55; margin:0; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px; margin:0 auto; padding:2.6rem 1.25rem 4rem}
+
+header{border-bottom:2px solid var(--ink); padding-bottom:1rem; margin-bottom:1.6rem}
+.kick{
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 .55rem;
+}
+h1{font-size:2.15rem; font-weight:700; letter-spacing:-.026em; line-height:1.05; margin:0 0 .55rem; text-wrap:balance}
+.thesis{font-size:1.02rem; color:var(--ink-2); margin:0; max-width:64ch; font-weight:500}
+.facts{
+  display:flex; flex-wrap:wrap; gap:.35rem 1.5rem; margin-top:1rem;
+  font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--muted);
+}
+.facts b{color:var(--accent); font-weight:600}
+.facts .warn{color:var(--signal); font-weight:600}
+
+h2{
+  font-size:.72rem; font-weight:600; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--accent); margin:2.3rem 0 .6rem; display:flex; align-items:center; gap:.7rem;
+}
+h2::after{content:""; flex:1; height:1px; background:var(--line)}
+p{margin:0 0 .7rem; max-width:76ch}
+p:last-child{margin-bottom:0}
+strong{font-weight:600}
+code{
+  font-family:"IBM Plex Mono",monospace; font-size:.85em; background:var(--panel-2);
+  border:1px solid var(--line); border-radius:3px; padding:.08em .3em;
+}
+.sig{color:var(--signal); font-weight:600}
+
+figure{margin:.9rem 0 0; background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:1.1rem 1.15rem .9rem}
+.scroll{overflow-x:auto}
+figure svg{display:block; width:100%; height:auto; min-width:640px; color:var(--ink-2)}
+figcaption{
+  font-size:.72rem; color:var(--muted); margin-top:.85rem; padding-top:.65rem;
+  border-top:1px solid var(--line); max-width:80ch; line-height:1.5;
+}
+figcaption b{color:var(--ink-2)}
+
+.s-box{fill:var(--panel-2); stroke:var(--line-2); stroke-width:1}
+.s-acc{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1}
+.s-sig{fill:var(--signal-soft); stroke:var(--signal); stroke-width:1}
+.s-ok{fill:var(--ok-soft); stroke:var(--ok); stroke-width:1}
+.t{font-family:"IBM Plex Mono",monospace; font-size:11px; fill:var(--ink)}
+.t2{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--ink-2)}
+.tm{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--muted)}
+.ts{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--signal); font-weight:600}
+.ta{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--accent); font-weight:600}
+.lbl{font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.09em; fill:var(--muted)}
+.ln{stroke:var(--line-2); fill:none; stroke-width:1}
+.ar{stroke:var(--accent); fill:none; stroke-width:1.4}
+.arS{stroke:var(--signal); fill:none; stroke-width:1.4}
+
+pre{
+  font-family:"IBM Plex Mono",monospace; font-size:.75rem; line-height:1.75;
+  background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent);
+  border-radius:4px; padding:.85rem 1rem; overflow-x:auto; margin:.7rem 0 0; color:var(--ink-2);
+}
+pre b{color:var(--ink); font-weight:600}
+pre i{color:var(--muted); font-style:normal}
+pre u{color:var(--signal); text-decoration:none; font-weight:600}
+
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:5px; background:var(--panel); margin-top:.9rem}
+table{border-collapse:collapse; width:100%; font-size:.75rem; min-width:600px}
+th,td{padding:.5rem .8rem; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-size:.63rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); background:var(--panel-2)}
+td{font-family:"IBM Plex Mono",monospace; color:var(--ink-2)}
+td b{color:var(--ink); font-weight:600}
+tr:last-child td{border-bottom:none}
+td.w{white-space:normal; font-family:"Archivo",sans-serif; font-size:.76rem}
+.bad{color:var(--signal); font-weight:600}
+.good{color:var(--ok); font-weight:600}
+
+.cols{display:grid; gap:1rem; grid-template-columns:1fr; margin-top:.9rem}
+@media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:.9rem 1rem}
+.card h3{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; font-weight:600; letter-spacing:.06em;
+  color:var(--accent); margin:0 0 .45rem; text-transform:uppercase;
+}
+.card p{font-size:.83rem; margin:0; color:var(--ink-2)}
+.card.alert{border-left:2px solid var(--signal)}
+.card.alert h3{color:var(--signal)}
+.card.ok{border-left:2px solid var(--ok)}
+.card.ok h3{color:var(--ok)}
+
+h3.sub{
+  font-family:"IBM Plex Mono",monospace; font-size:.7rem; font-weight:600;
+  letter-spacing:.06em; color:var(--ink); margin:1.5rem 0 0;
+  padding-bottom:.3rem; border-bottom:1px solid var(--line-2); max-width:76ch;
+}
+p.note{
+  font-size:.8rem; color:var(--ink-2); background:var(--panel-2);
+  border:1px solid var(--line); border-radius:4px; padding:.6rem .8rem; margin-top:.7rem;
+}
+
+ul{margin:.6rem 0 0; padding-left:1.1rem; max-width:76ch}
+li{margin-bottom:.35rem; color:var(--ink-2)}
+li b{color:var(--ink)}
+
+footer{
+  margin-top:2.6rem; padding-top:1rem; border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--muted); line-height:1.65;
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="kick">ch07/submit_03_tracking.py · 710 lines · vs a 397B production stack</p>
+  <h1>One File, Three Systems</h1>
+  <p class="thesis">The same seven steps run in both. What changes at scale is not the algorithm — it is that generation, training and orchestration stop being able to share one process, and every seam between them becomes a system you have to operate.</p>
+  <div class="facts">
+    <span><b>7</b> components in the loop</span>
+    <span><b>1</b> nn.Module today</span>
+    <span><b>3</b> systems at 397B</span>
+    <span class="warn">1 seam causes most of the pain</span>
+  </div>
+</header>
+
+<h2>The one sentence</h2>
+
+<p><strong>Today the generator and the trainer are the same object in memory.</strong> Every tool in
+the frontier stack — vLLM, Megatron, SkyRL — exists because at scale they cannot be, and once they
+are separate processes with separate shardings, someone has to move weights between them, keep them
+numerically identical, and keep both busy.</p>
+
+<h2>1 · The loop you have today</h2>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 470" role="img" aria-label="The seven steps of the GRPO loop, all inside one process">
+  <defs><marker id="s1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+
+  <rect x="8" y="34" width="548" height="420" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text class="lbl" x="22" y="26" fill="var(--accent)">ONE PROCESS · ONE GPU · ONE nn.Module</text>
+
+  <rect class="s-box" x="28" y="64" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="82">1 · PICK A PROMPT</text>
+  <text class="t2" x="42" y="100">example = math_data[step % len(math_data)]</text>
+  <line class="ar" x1="273" y1="108" x2="273" y2="114" marker-end="url(#s1)"/>
+
+  <rect class="s-acc" x="28" y="118" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="136">2 · GENERATE 8 ROLLOUTS</text>
+  <text class="t2" x="42" y="154">for _ in range(num_rollouts): sample_response(...)</text>
+  <line class="ar" x1="273" y1="162" x2="273" y2="168" marker-end="url(#s1)"/>
+
+  <rect class="s-box" x="28" y="172" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="190">3 · SCORE EACH</text>
+  <text class="t2" x="42" y="208">reward_rlvr(text, ground_truth)   — sympy verifier, CPU</text>
+  <line class="ar" x1="273" y1="216" x2="273" y2="222" marker-end="url(#s1)"/>
+
+  <rect class="s-box" x="28" y="226" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="244">4 · GROUP ADVANTAGE</text>
+  <text class="t2" x="42" y="262">(rewards - rewards.mean()) / (rewards.std() + 1e-4)</text>
+  <line class="ar" x1="273" y1="270" x2="273" y2="276" marker-end="url(#s1)"/>
+
+  <rect class="s-acc" x="28" y="280" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="298">5 · LOG-PROBS — A SECOND FORWARD PASS, WITH GRAD</text>
+  <text class="t2" x="42" y="316">sequence_logprob_and_entropy(model, token_ids, prompt_len)</text>
+  <line class="ar" x1="273" y1="324" x2="273" y2="330" marker-end="url(#s1)"/>
+
+  <rect class="s-box" x="28" y="334" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="352">6 · LOSS</text>
+  <text class="t2" x="42" y="370">pg_loss = -(advantages.detach() * logps).mean()</text>
+  <line class="ar" x1="273" y1="378" x2="273" y2="384" marker-end="url(#s1)"/>
+
+  <rect class="s-box" x="28" y="388" width="490" height="44" rx="4"/>
+  <text class="lbl" x="42" y="406">7 · UPDATE</text>
+  <text class="t2" x="42" y="424">backward() · clip_grad_norm_(1.0) · AdamW.step()</text>
+
+  <path class="ar" d="M518,410 H538 V86 H522" marker-end="url(#s1)"/>
+  <text class="ta" x="524" y="252">next</text>
+  <text class="ta" x="524" y="266">step</text>
+
+  <text class="lbl" x="580" y="80">WHAT MAKES THIS SIMPLE</text>
+  <text class="tm" x="580" y="104">Steps 2 and 5 call the same</text>
+  <text class="tm" x="580" y="120">model object that step 7</text>
+  <text class="tm" x="580" y="136">updates. Nothing to copy,</text>
+  <text class="ts" x="580" y="152">nothing to keep in sync.</text>
+  <text class="tm" x="580" y="184">One prompt per step. The</text>
+  <text class="tm" x="580" y="200">"batch" is 1 prompt x 8</text>
+  <text class="tm" x="580" y="216">rollouts, run one after</text>
+  <text class="tm" x="580" y="232">another in a Python loop.</text>
+  <text class="tm" x="580" y="264">Generation is strictly</text>
+  <text class="tm" x="580" y="280">sequential: one sequence,</text>
+  <text class="tm" x="580" y="296">one token at a time.</text>
+  <text class="ts" x="580" y="320">Measured: 27-46 tok/s.</text>
+  <text class="tm" x="580" y="352">The policy is always exactly</text>
+  <text class="tm" x="580" y="368">the policy that generated</text>
+  <text class="tm" x="580" y="384">the data. Perfectly on-policy</text>
+  <text class="tm" x="580" y="400">by construction.</text>
+  <text class="ta" x="580" y="432">All of it: 710 lines.</text>
+</svg>
+</div>
+<figcaption>Steps 4 and 6 are the actual GRPO algorithm — five lines of tensor math. Everything else is plumbing that a frontier stack replaces wholesale. Note that <code>submit_03</code> is the simplest form: no importance ratio (that arrives in <code>04</code>), no KL term (<code>05</code>).</figcaption>
+</figure>
+
+<p class="note"><b>Those throughput numbers are yours.</b> The smoke run measured 27-46 tok/s. A
+500-step run at 8 rollouts x 1024 tokens is ~4.1M generated tokens, so <b>25-42 hours</b>, almost
+all of it in step 2. Generation, not gradient computation, is where the time goes — which is the
+whole reason a separate inference engine exists.</p>
+<h2>2 · The same seven steps at 397B</h2>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 470" role="img" aria-label="The frontier stack: SkyRL orchestrating separate vLLM inference and Megatron training planes">
+  <defs>
+    <marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+    <marker id="f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"/></marker>
+  </defs>
+
+  <rect class="s-acc" x="8" y="14" width="884" height="58" rx="4"/>
+  <text class="lbl" x="24" y="34">ORCHESTRATION — SkyRL</text>
+  <text class="t" x="24" y="54">the async loop · schedules rollouts · owns the weight sync · plugs in the agent harness</text>
+  <text class="tm" x="560" y="54">replaces `for step in range(steps)`</text>
+
+  <line class="ar" x1="200" y1="74" x2="200" y2="104" marker-end="url(#f1)"/>
+  <line class="ar" x1="690" y1="74" x2="690" y2="104" marker-end="url(#f1)"/>
+
+  <rect x="8" y="108" width="392" height="196" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text class="lbl" x="22" y="128" fill="var(--accent)">INFERENCE PLANE — vLLM — 12 NODES</text>
+  <rect class="s-box" x="26" y="140" width="82" height="40" rx="3"/><text class="t2" x="42" y="164">vLLM</text>
+  <rect class="s-box" x="118" y="140" width="82" height="40" rx="3"/><text class="t2" x="134" y="164">vLLM</text>
+  <rect class="s-box" x="210" y="140" width="82" height="40" rx="3"/><text class="t2" x="226" y="164">vLLM</text>
+  <rect class="s-box" x="302" y="140" width="82" height="40" rx="3"/><text class="tm" x="322" y="164">...</text>
+  <text class="tm" x="26" y="204">paged attention · continuous batching</text>
+  <text class="ts" x="26" y="222">300 concurrent rollouts (KV-cache bound)</text>
+  <text class="tm" x="26" y="244">replaces step 2 — the python for-loop</text>
+  <text class="tm" x="26" y="268">holds its OWN copy of the weights, in its</text>
+  <text class="tm" x="26" y="284">own layout, with its own forward pass</text>
+
+  <rect x="492" y="108" width="400" height="196" rx="5" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text class="lbl" x="506" y="128" fill="var(--ok)">TRAINING PLANE — Megatron — 8 NODES</text>
+  <rect class="s-box" x="510" y="140" width="86" height="40" rx="3"/><text class="t2" x="530" y="164">TP</text>
+  <rect class="s-box" x="606" y="140" width="86" height="40" rx="3"/><text class="t2" x="626" y="164">PP</text>
+  <rect class="s-box" x="702" y="140" width="86" height="40" rx="3"/><text class="t2" x="722" y="164">EP</text>
+  <rect class="s-box" x="798" y="140" width="80" height="40" rx="3"/><text class="t2" x="816" y="164">CP</text>
+  <text class="tm" x="510" y="204">397B params sharded four ways, plus</text>
+  <text class="tm" x="510" y="220">gradients, optimizer states, CPU offload</text>
+  <text class="tm" x="510" y="244">replaces steps 5-7 — logprobs, loss, AdamW</text>
+  <text class="tm" x="510" y="268">dynamic micro-batching; parallelism config</text>
+  <text class="tm" x="510" y="284">is swept, not guessed</text>
+
+  <path class="ar" d="M404,168 H488" marker-end="url(#f1)"/>
+  <text class="ta" x="412" y="160">trajectories</text>
+  <path class="arS" d="M488,258 H404" marker-end="url(#f2)" stroke-width="2.4"/>
+  <text class="ts" x="410" y="278">weights, after every update</text>
+
+  <rect class="s-box" x="8" y="330" width="392" height="56" rx="4"/>
+  <text class="lbl" x="24" y="350">REWARD / AGENT HARNESS</text>
+  <text class="tm" x="24" y="370">replaces step 3 — a separate, sandboxed, parallel service</text>
+
+  <rect class="s-box" x="492" y="330" width="400" height="56" rx="4"/>
+  <text class="lbl" x="508" y="350">LOSS — DPPO, prompt_mean AGGREGATION</text>
+  <text class="tm" x="508" y="370">replaces step 6 — needs an importance ratio, because async</text>
+
+  <line class="ln" x1="8" y1="408" x2="892" y2="408"/>
+  <text class="ts" x="8" y="430">The algorithm did not get harder. The 12:8 node split did.</text>
+  <text class="tm" x="8" y="450">Inference and training are sized independently because generation, not gradients, is the bottleneck.</text>
+</svg>
+</div>
+<figcaption>Node counts, the 300-rollout concurrency cap, DPPO and <code>prompt_mean</code> are from the Mercor 397B write-up. The <b>12:8 inference-to-training ratio</b> is the most telling number here: they spend more hardware generating than learning.</figcaption>
+</figure>
+
+<h2>3 · The seam that does not exist in your version</h2>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 330" role="img" aria-label="One shared model object today versus two synchronised copies at scale">
+  <defs>
+    <marker id="w1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+    <marker id="w2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"/></marker>
+  </defs>
+
+  <text class="lbl" x="8" y="22">TODAY</text>
+  <rect x="8" y="32" width="420" height="212" rx="5" fill="none" stroke="var(--ok)" stroke-width="1.5"/>
+  <rect class="s-ok" x="118" y="112" width="210" height="56" rx="4"/>
+  <text class="t" x="134" y="134">Qwen3Model</text>
+  <text class="tm" x="134" y="152">one nn.Module on cuda:0</text>
+  <rect class="s-box" x="30" y="52" width="140" height="40" rx="3"/>
+  <text class="t2" x="46" y="76">generate (no grad)</text>
+  <rect class="s-box" x="276" y="52" width="140" height="40" rx="3"/>
+  <text class="t2" x="292" y="76">train (with grad)</text>
+  <path class="ar" d="M100,92 L150,108" marker-end="url(#w1)"/>
+  <path class="ar" d="M330,92 L296,108" marker-end="url(#w1)"/>
+  <text class="tm" x="30" y="196">Same tensors. The generator IS the</text>
+  <text class="tm" x="30" y="212">trainer. They cannot disagree, and</text>
+  <text class="ts" x="30" y="230">there is nothing to synchronise.</text>
+
+  <text class="lbl" x="470" y="22">AT SCALE</text>
+  <rect x="470" y="32" width="422" height="212" rx="5" fill="none" stroke="var(--signal)" stroke-width="1.5"/>
+  <rect class="s-acc" x="492" y="52" width="378" height="52" rx="4"/>
+  <text class="t" x="508" y="72">vLLM copy of the weights</text>
+  <text class="tm" x="508" y="90">its own sharding, its own attention kernels</text>
+  <rect class="s-ok" x="492" y="160" width="378" height="52" rx="4"/>
+  <text class="t" x="508" y="180">Megatron copy + optimizer states</text>
+  <text class="tm" x="508" y="198">TP / PP / EP / CP sharded, partly CPU-offloaded</text>
+  <path class="arS" d="M681,156 L681,110" marker-end="url(#w2)" stroke-width="2.4"/>
+  <text class="ts" x="500" y="130">in-flight NCCL weight sync — after every update</text>
+  <text class="tm" x="470" y="264">Two copies, two layouts, two independent implementations of the same forward pass.</text>
+  <text class="ts" x="470" y="286">Mercor found a real bug here: vLLM CPU-offloading + GDN models + in-flight updates</text>
+  <text class="ts" x="470" y="304">silently diverged. They caught it with logprob divergence checks between the two.</text>
+  <text class="tm" x="470" y="324">That class of bug is unreachable in a single-file implementation.</text>
+</svg>
+</div>
+<figcaption><b>This is the seam to understand first.</b> Splitting generation from training buys throughput, and costs you a distributed-systems problem: moving hundreds of gigabytes of weights between two different shardings on every step, fast enough not to stall either side, and provably identically enough that the policy you trained is the policy that generated.</figcaption>
+</figure>
+<h2>4 · Component by component</h2>
+
+<div class="tw">
+<table>
+<tr><th>#</th><th>Component</th><th class="w">submit_03_tracking.py</th><th class="w">397B stack</th><th class="w">Why it has to split</th></tr>
+<tr><td>1</td><td>prompt batch</td><td class="w">one example per step, <code>math_data[step % len]</code></td><td class="w">32 prompts x 8 samples, scheduled continuously</td><td class="w">Gradient noise. One prompt per update is a very small batch.</td></tr>
+<tr><td><b>2</b></td><td><b>rollout generation</b></td><td class="w">Python <code>for</code> loop, one sequence at a time, token by token, custom <code>KVCache</code></td><td class="w"><b>vLLM</b> — paged attention, continuous batching, 300 concurrent rollouts</td><td class="w"><b>Throughput.</b> 27-46 tok/s vs orders of magnitude more. This is the whole ballgame.</td></tr>
+<tr><td>3</td><td>reward</td><td class="w"><code>reward_rlvr()</code>, sympy, inline and synchronous</td><td class="w">separate verifier / agent harness, run in parallel</td><td class="w">CPU-bound and slow relative to the GPU; must not block generation. Real agent tasks need sandboxing.</td></tr>
+<tr><td>4</td><td>advantage</td><td class="w"><code>(r - r.mean()) / (r.std() + 1e-4)</code></td><td class="w">the same maths, over a larger group</td><td class="w"><b>Does not split.</b> The algorithm is unchanged.</td></tr>
+<tr><td>5</td><td>log-probs</td><td class="w">second forward pass on the same model — exact by construction</td><td class="w">sampling logprobs stored by vLLM; trainer recomputes; the two are compared</td><td class="w">Async means the sampler is a slightly older policy than the trainer.</td></tr>
+<tr><td>6</td><td>loss</td><td class="w"><code>-(adv * logp).mean()</code> — plain policy gradient</td><td class="w">DPPO with importance ratio + clipping, <code>prompt_mean</code> aggregation</td><td class="w">Off-policy correction. Needed only because generation and training were decoupled.</td></tr>
+<tr><td>7</td><td>optimizer</td><td class="w">AdamW over all params on one GPU</td><td class="w"><b>Megatron</b> — TP/PP/EP/CP, distributed optimizer, CPU offload, dynamic micro-batching</td><td class="w"><b>Memory.</b> 397B params plus gradients plus Adam moments does not fit on a node.</td></tr>
+<tr><td>—</td><td><b>weight sync</b></td><td class="w"><b>does not exist</b> — one object</td><td class="w">in-flight NCCL sync, trainer to inference, every update</td><td class="w">Created purely by splitting 2 from 7.</td></tr>
+<tr><td>—</td><td>orchestration</td><td class="w"><code>for step in range(steps)</code></td><td class="w"><b>SkyRL</b> — fully-async loop, overlaps generation and training</td><td class="w">Otherwise one plane idles while the other works.</td></tr>
+</table>
+</div>
+
+<h2>5 · What each tool is actually for</h2>
+
+<div class="cols">
+  <div class="card">
+    <h3>vLLM — the generator</h3>
+    <p>Replaces <b>step 2 only</b>. Paged attention lets hundreds of sequences share KV cache without pre-allocating worst-case memory; continuous batching keeps the GPU saturated as sequences finish at different times. You reach for it when generation dominates wall-clock — which it already does for you.</p>
+  </div>
+  <div class="card">
+    <h3>Megatron — the trainer</h3>
+    <p>Replaces <b>steps 5-7</b>. Splits one model across GPUs four ways: tensor (within a layer), pipeline (across layers), expert (across MoE experts), context (across sequence length). You reach for it when weights + gradients + optimizer states stop fitting.</p>
+  </div>
+  <div class="card">
+    <h3>SkyRL — the loop</h3>
+    <p>Replaces <b>the <code>for</code> statement</b>, which sounds trivial and is not. It owns async scheduling, the weight sync, and the agent harness interface, so generation and training overlap instead of alternating.</p>
+  </div>
+  <div class="card alert">
+    <h3>What none of them change</h3>
+    <p>Steps 1, 3 and 4 — sampling a prompt, scoring it, normalising rewards within the group. The GRPO idea in your file <em>is</em> the GRPO idea at 397B. The rest is logistics.</p>
+  </div>
+</div>
+
+<h2>6 · What breaks first, as the model grows</h2>
+
+<p>The tools do not all become necessary at once. In rough order:</p>
+
+<div class="tw">
+<table>
+<tr><th>Scale</th><th class="w">What breaks</th><th class="w">What you reach for</th></tr>
+<tr><td><b>0.6B</b> (today)</td><td class="w">Nothing. A 1.5 GB model, ~7 GB peak CUDA, one H100. It fits with room to spare.</td><td class="w">A single file.</td></tr>
+<tr><td>0.6B, impatient</td><td class="w"><b>Generation throughput.</b> 25-42 h per 500-step run, nearly all in step 2.</td><td class="w"><b>vLLM</b> — the first tool worth adding, and it does not require splitting processes if colocated.</td></tr>
+<tr><td>~7B+</td><td class="w"><b>Optimizer memory.</b> Weights are only a sixth of the footprint; Adam moments and gradients dominate.</td><td class="w">ZeRO / FSDP sharding, then Megatron.</td></tr>
+<tr><td>~70B+</td><td class="w">A single layer's activations, and the model itself, exceed one device.</td><td class="w"><b>Megatron</b> TP + PP.</td></tr>
+<tr><td>MoE, 100B+</td><td class="w">Experts must live on different devices; long contexts exceed per-device memory.</td><td class="w">EP and CP on top.</td></tr>
+<tr><td><b>397B</b></td><td class="w">Both planes are large, and each stalls waiting for the other.</td><td class="w"><b>SkyRL</b> async + in-flight weight sync, and a 12:8 node split.</td></tr>
+</table>
+</div>
+
+<p class="note"><b>The honest reading for ch07.</b> At 0.6B on one H100, the single file is not a
+simplification for teaching — it is the <em>correct</em> engineering choice. Every component of the
+frontier stack exists to solve a problem you do not have. The one exception is generation speed:
+vLLM would pay for itself today, and it is the only piece of that stack that would.</p>
+
+<h2>7 · Reading the loop back onto the stack</h2>
+
+<pre><i># your 710 lines, annotated with what replaces each part</i>
+
+for step in range(steps):                          <u>SkyRL</u>   async scheduler
+    example = math_data[step % len(math_data)]     <i>unchanged</i>
+    stats = compute_grpo_loss(...)
+        for _ in range(num_rollouts):
+            sample_response(...)                   <u>vLLM</u>    300 concurrent, paged KV
+            reward_rlvr(text, answer)              <i>verifier service</i>
+        advantages = (r - r.mean()) / r.std()      <i>unchanged</i>
+        sequence_logprob_and_entropy(...)          <u>Megatron</u> + divergence check vs vLLM
+        pg_loss = -(adv * logp).mean()             <u>DPPO</u>    importance ratio + clip
+    loss.backward()                                <u>Megatron</u> TP/PP/EP/CP
+    optimizer.step()                               <u>Megatron</u> distributed optimizer
+                                                   <b>--- and then, newly: sync weights ---</b></pre>
+
+<p>The last line is the one with no counterpart in your file. Everything above it is a substitution;
+that one is an addition, and it is where the frontier stack spends most of its complexity budget.</p>
+
+<footer>
+reasoning-from-scratch · _reports/0904 · 2026-09-04<br>
+Sources: ch07/01_main-chapter-code/submit_03_tracking.py (read directly) · measured throughput from the ch07 smoke run on baltic01 · Mercor, "Training frontier knowledge work agents: a 397B RL training guide with SkyRL"
+</footer>
+
+</div>

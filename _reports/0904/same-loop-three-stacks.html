@@ -1,0 +1,712 @@
+<title>Same Loop, Three Stacks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F5F6F9; --panel:#FFFFFF; --panel-2:#EEF1F6; --line:#DCE0E9; --line-2:#C6CCD9;
+  --ink:#161A24; --ink-2:#4C5464; --muted:#7B8394;
+  --accent:#3D5A9E; --accent-soft:#E4EAF6;
+  --signal:#C25E33; --signal-soft:#F7E7DE;
+  --ok:#2F7A5B; --ok-soft:#DFF0E8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+    --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+    --accent:#6D8FD4; --accent-soft:#1F2A3D;
+    --signal:#D4784A; --signal-soft:#33241B;
+    --ok:#5FAE88; --ok-soft:#17281F;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171E; --panel:#1B1F28; --panel-2:#222732; --line:#2A303C; --line-2:#39414F;
+  --ink:#E3E6ED; --ink-2:#A0A8B7; --muted:#737B8B;
+  --accent:#6D8FD4; --accent-soft:#1F2A3D;
+  --signal:#D4784A; --signal-soft:#33241B;
+  --ok:#5FAE88; --ok-soft:#17281F;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55; margin:0; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px; margin:0 auto; padding:2.6rem 1.25rem 4rem}
+
+header{border-bottom:2px solid var(--ink); padding-bottom:1rem; margin-bottom:1.6rem}
+.kick{
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 .55rem;
+}
+h1{font-size:2.15rem; font-weight:700; letter-spacing:-.026em; line-height:1.05; margin:0 0 .55rem; text-wrap:balance}
+.thesis{font-size:1.02rem; color:var(--ink-2); margin:0; max-width:64ch; font-weight:500}
+.facts{
+  display:flex; flex-wrap:wrap; gap:.35rem 1.5rem; margin-top:1rem;
+  font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--muted);
+}
+.facts b{color:var(--accent); font-weight:600}
+.facts .warn{color:var(--signal); font-weight:600}
+
+h2{
+  font-size:.72rem; font-weight:600; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--accent); margin:2.3rem 0 .6rem; display:flex; align-items:center; gap:.7rem;
+}
+h2::after{content:""; flex:1; height:1px; background:var(--line)}
+p{margin:0 0 .7rem; max-width:76ch}
+p:last-child{margin-bottom:0}
+strong{font-weight:600}
+code{
+  font-family:"IBM Plex Mono",monospace; font-size:.85em; background:var(--panel-2);
+  border:1px solid var(--line); border-radius:3px; padding:.08em .3em;
+}
+.sig{color:var(--signal); font-weight:600}
+
+figure{margin:.9rem 0 0; background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:1.1rem 1.15rem .9rem}
+.scroll{overflow-x:auto}
+figure svg{display:block; width:100%; height:auto; min-width:640px; color:var(--ink-2)}
+figcaption{
+  font-size:.72rem; color:var(--muted); margin-top:.85rem; padding-top:.65rem;
+  border-top:1px solid var(--line); max-width:80ch; line-height:1.5;
+}
+figcaption b{color:var(--ink-2)}
+
+.s-box{fill:var(--panel-2); stroke:var(--line-2); stroke-width:1}
+.s-acc{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1}
+.s-sig{fill:var(--signal-soft); stroke:var(--signal); stroke-width:1}
+.s-ok{fill:var(--ok-soft); stroke:var(--ok); stroke-width:1}
+.t{font-family:"IBM Plex Mono",monospace; font-size:11px; fill:var(--ink)}
+.t2{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--ink-2)}
+.tm{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--muted)}
+.ts{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--signal); font-weight:600}
+.ta{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--accent); font-weight:600}
+.lbl{font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.09em; fill:var(--muted)}
+.ln{stroke:var(--line-2); fill:none; stroke-width:1}
+.ar{stroke:var(--accent); fill:none; stroke-width:1.4}
+.arS{stroke:var(--signal); fill:none; stroke-width:1.4}
+
+pre{
+  font-family:"IBM Plex Mono",monospace; font-size:.75rem; line-height:1.75;
+  background:var(--panel); border:1px solid var(--line); border-left:2px solid var(--accent);
+  border-radius:4px; padding:.85rem 1rem; overflow-x:auto; margin:.7rem 0 0; color:var(--ink-2);
+}
+pre b{color:var(--ink); font-weight:600}
+pre i{color:var(--muted); font-style:normal}
+pre u{color:var(--signal); text-decoration:none; font-weight:600}
+
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:5px; background:var(--panel); margin-top:.9rem}
+table{border-collapse:collapse; width:100%; font-size:.75rem; min-width:600px}
+th,td{padding:.5rem .8rem; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-size:.63rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); background:var(--panel-2)}
+td{font-family:"IBM Plex Mono",monospace; color:var(--ink-2)}
+td b{color:var(--ink); font-weight:600}
+tr:last-child td{border-bottom:none}
+td.w{white-space:normal; font-family:"Archivo",sans-serif; font-size:.76rem}
+.bad{color:var(--signal); font-weight:600}
+.good{color:var(--ok); font-weight:600}
+
+.cols{display:grid; gap:1rem; grid-template-columns:1fr; margin-top:.9rem}
+@media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:.9rem 1rem}
+.card h3{
+  font-family:"IBM Plex Mono",monospace; font-size:.68rem; font-weight:600; letter-spacing:.06em;
+  color:var(--accent); margin:0 0 .45rem; text-transform:uppercase;
+}
+.card p{font-size:.83rem; margin:0; color:var(--ink-2)}
+.card.alert{border-left:2px solid var(--signal)}
+.card.alert h3{color:var(--signal)}
+.card.ok{border-left:2px solid var(--ok)}
+.card.ok h3{color:var(--ok)}
+
+h3.sub{
+  font-family:"IBM Plex Mono",monospace; font-size:.7rem; font-weight:600;
+  letter-spacing:.06em; color:var(--ink); margin:1.5rem 0 0;
+  padding-bottom:.3rem; border-bottom:1px solid var(--line-2); max-width:76ch;
+}
+p.note{
+  font-size:.8rem; color:var(--ink-2); background:var(--panel-2);
+  border:1px solid var(--line); border-radius:4px; padding:.6rem .8rem; margin-top:.7rem;
+}
+
+ul{margin:.6rem 0 0; padding-left:1.1rem; max-width:76ch}
+li{margin-bottom:.35rem; color:var(--ink-2)}
+li b{color:var(--ink)}
+
+footer{
+  margin-top:2.6rem; padding-top:1rem; border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--muted); line-height:1.65;
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="kick">ch07 single file · phitrain SWE on 8 GPUs · SkyRL at 397B</p>
+  <h1>Same Loop, Three Stacks</h1>
+  <p class="thesis">All three run the same eight-slot loop. What differs is which slots were promoted into their own system, whether generation and training share GPUs, and therefore how weights move between them.</p>
+  <div class="facts">
+    <span><b>8</b> slots in every stack</span>
+    <span><b>1</b> GPU · <b>8</b> GPUs · <b>20</b> nodes</span>
+    <span class="warn">colocated vs disjoint is the fork</span>
+  </div>
+</header>
+
+<h2>The one sentence</h2>
+
+<p><strong>Nobody replaces the algorithm — they replace the plumbing around it.</strong> Group
+advantages are five lines of tensor maths in all three. The difference is that at 0.6B one process
+does everything, at 14B two systems <em>take turns on the same GPUs</em>, and at 397B two systems
+run on <em>separate hardware</em> and must be kept in sync while both stay busy.</p>
+
+<h2>1 · The three topologies</h2>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 560" role="img" aria-label="Three GPU topologies: single process, colocated, and disjoint">
+  <defs>
+    <marker id="t1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+    <marker id="t2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"/></marker>
+  </defs>
+
+  <text class="lbl" x="8" y="20">A · ch07 — ONE PROCESS, ONE GPU, 0.6B</text>
+  <rect x="8" y="30" width="884" height="96" rx="5" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <rect class="s-ok" x="28" y="52" width="240" height="54" rx="4"/>
+  <text class="t" x="44" y="74">one nn.Module</text>
+  <text class="tm" x="44" y="92">generates AND trains</text>
+  <text class="tm" x="292" y="70">Steps 2 and 7 touch the same tensors.</text>
+  <text class="ts" x="292" y="88">No placement decision. No weight sync. Nothing can diverge.</text>
+  <text class="ta" x="700" y="70">1 x H100</text>
+  <text class="tm" x="700" y="88">~7 GB peak</text>
+
+  <text class="lbl" x="8" y="164">B · phitrain SWE — COLOCATED, 8 GPUs, Qwen3-14B</text>
+  <rect x="8" y="174" width="884" height="176" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text class="lbl" x="24" y="194" fill="var(--accent)">THE SAME 8 GPUs, USED IN ALTERNATION</text>
+  <rect class="s-acc" x="28" y="206" width="380" height="58" rx="4"/>
+  <text class="t" x="44" y="228">vLLM engines</text>
+  <text class="tm" x="44" y="246">TP=1 · prefix caching · gpu_mem_util 0.8</text>
+  <rect class="s-ok" x="484" y="206" width="384" height="58" rx="4"/>
+  <text class="t" x="500" y="228">PyTorch FSDP</text>
+  <text class="tm" x="500" y="246">fsdp_offload · activation ckpt · FA2 · bf16</text>
+  <path class="ar" d="M412,224 H480" marker-end="url(#t1)"/>
+  <path class="arS" d="M480,250 H412" marker-end="url(#t2)"/>
+  <text class="tm" x="28" y="292">While the trainer runs, the engines are OFFLOADED off the GPU; while rollouts run, the trainer waits.</text>
+  <text class="ts" x="28" y="312">One resource pool, two tenants, taking turns. Weight handover is local — no network transfer.</text>
+  <text class="tm" x="28" y="334">ColocatedRolloutPool + ColocatedWeightSynchronizer   (phitrain/rl/rollout/)</text>
+
+  <text class="lbl" x="8" y="388">C · SkyRL 397B — DISJOINT, 20 NODES</text>
+  <rect x="8" y="398" width="884" height="150" rx="5" fill="none" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <rect class="s-acc" x="28" y="420" width="380" height="58" rx="4"/>
+  <text class="t" x="44" y="442">vLLM — 12 nodes</text>
+  <text class="tm" x="44" y="460">300 concurrent rollouts, KV-cache bound</text>
+  <rect class="s-ok" x="484" y="420" width="384" height="58" rx="4"/>
+  <text class="t" x="500" y="442">Megatron — 8 nodes</text>
+  <text class="tm" x="500" y="460">TP / PP / EP / CP + CPU offload</text>
+  <path class="ar" d="M412,438 H480" marker-end="url(#t1)"/>
+  <path class="arS" d="M480,464 H412" marker-end="url(#t2)" stroke-width="2.4"/>
+  <text class="ts" x="28" y="506">Both planes run at once, sized independently (12:8). Neither waits for the other.</text>
+  <text class="tm" x="28" y="528">Price: weights must cross the network on every update, in flight, over NCCL.</text>
+</svg>
+</div>
+<figcaption><b>Colocated versus disjoint is the real architectural fork</b>, not the choice of library. Colocated keeps one pool of GPUs and accepts that half of them idle at any moment; disjoint keeps both busy and accepts a distributed weight-sync problem. phitrain supports both — <code>rollout_pool: colocated | disjoint</code> — and the SWE config uses the colocated default.</figcaption>
+</figure>
+<h2>2 · The loop, annotated three ways</h2>
+
+<p>The left column is your code, line for line. Each row shows what fills that slot in each stack.
+The colour says how much machinery the slot costs, not how important it is.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 590" role="img" aria-label="The ch07 loop line by line, with what fills each slot in the ch07, SWE and 397B stacks">
+  <text class="lbl" x="8" y="20">YOUR CODE — submit_03_tracking.py</text>
+  <text class="lbl" x="270" y="20">ch07 · 1 GPU</text>
+  <text class="lbl" x="474" y="20">phitrain SWE · 8 GPUs</text>
+  <text class="lbl" x="678" y="20">SkyRL · 397B</text>
+  <line class="ln" x1="8" y1="28" x2="892" y2="28"/>
+
+  <text class="t2" x="8" y="60">for step in range(steps)</text>
+  <rect class="s-ok"  x="266" y="38" width="196" height="40" rx="3"/><text class="tm" x="278" y="56">a python for loop</text><text class="tm" x="278" y="70">nothing else</text>
+  <rect class="s-acc" x="470" y="38" width="196" height="40" rx="3"/><text class="t2" x="482" y="56">Ray + RayTuner</text><text class="tm" x="482" y="70">actor placement, RPC</text>
+  <rect class="s-acc" x="674" y="38" width="218" height="40" rx="3"/><text class="t2" x="686" y="56">SkyRL</text><text class="tm" x="686" y="70">fully-async scheduler</text>
+
+  <text class="t2" x="8" y="108">example = math_data[...]</text>
+  <rect class="s-ok"  x="266" y="86" width="196" height="40" rx="3"/><text class="tm" x="278" y="110">1 prompt x 8 rollouts</text>
+  <rect class="s-ok"  x="470" y="86" width="196" height="40" rx="3"/><text class="tm" x="482" y="110">8 prompts x 32 rollouts</text>
+  <rect class="s-ok"  x="674" y="86" width="218" height="40" rx="3"/><text class="tm" x="686" y="110">32 prompts x 8 samples</text>
+
+  <text class="t2" x="8" y="156">sample_response() x N</text>
+  <rect class="s-ok"  x="266" y="134" width="196" height="40" rx="3"/><text class="tm" x="278" y="152">python loop, 1 seq</text><text class="ts" x="278" y="166">27-46 tok/s</text>
+  <rect class="s-acc" x="470" y="134" width="196" height="40" rx="3"/><text class="t2" x="482" y="152">vLLM (colocated)</text><text class="tm" x="482" y="166">TP=1, prefix caching</text>
+  <rect class="s-acc" x="674" y="134" width="218" height="40" rx="3"/><text class="t2" x="686" y="152">vLLM (12 nodes)</text><text class="tm" x="686" y="166">300 concurrent</text>
+
+  <text class="t2" x="8" y="204">reward_rlvr(text, ans)</text>
+  <rect class="s-ok"  x="266" y="182" width="196" height="40" rx="3"/><text class="tm" x="278" y="200">sympy, inline</text><text class="tm" x="278" y="214">milliseconds</text>
+  <rect class="s-sig" x="470" y="182" width="196" height="40" rx="3"/><text class="ts" x="482" y="200">run the repo's tests</text><text class="tm" x="482" y="214">in Docker, 300s cap</text>
+  <rect class="s-sig" x="674" y="182" width="218" height="40" rx="3"/><text class="ts" x="686" y="200">verifier service</text><text class="tm" x="686" y="214">parallel, sandboxed</text>
+
+  <rect x="4" y="228" width="888" height="46" rx="4" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="1.5"/>
+  <text class="t2" x="8" y="256">adv = (r - mean) / std</text>
+  <text class="t" x="278" y="248">IDENTICAL IN ALL THREE</text>
+  <text class="tm" x="278" y="264">the GRPO idea is five lines of tensor maths and it never changes</text>
+
+  <text class="t2" x="8" y="304">logprob + entropy</text>
+  <rect class="s-ok"  x="266" y="282" width="196" height="40" rx="3"/><text class="tm" x="278" y="300">2nd forward pass</text><text class="tm" x="278" y="314">exact by construction</text>
+  <rect class="s-acc" x="470" y="282" width="196" height="40" rx="3"/><text class="t2" x="482" y="300">FSDP forward</text><text class="tm" x="482" y="314">+ frozen KL reference</text>
+  <rect class="s-sig" x="674" y="282" width="218" height="40" rx="3"/><text class="t2" x="686" y="300">Megatron forward</text><text class="ts" x="686" y="314">+ divergence check vs vLLM</text>
+
+  <text class="t2" x="8" y="352">loss = -(adv · logp)</text>
+  <rect class="s-ok"  x="266" y="330" width="196" height="40" rx="3"/><text class="tm" x="278" y="348">plain policy gradient</text><text class="tm" x="278" y="362">no ratio, no KL</text>
+  <rect class="s-acc" x="470" y="330" width="196" height="40" rx="3"/><text class="t2" x="482" y="348">GRPO + clip + KL</text><text class="tm" x="482" y="362">eps 0.2, kl 1e-3</text>
+  <rect class="s-acc" x="674" y="330" width="218" height="40" rx="3"/><text class="t2" x="686" y="348">DPPO</text><text class="tm" x="686" y="362">prompt_mean aggregation</text>
+
+  <text class="t2" x="8" y="400">optimizer.step()</text>
+  <rect class="s-ok"  x="266" y="378" width="196" height="40" rx="3"/><text class="tm" x="278" y="396">AdamW, one device</text><text class="tm" x="278" y="410">all params local</text>
+  <rect class="s-acc" x="470" y="378" width="196" height="40" rx="3"/><text class="t2" x="482" y="396">FSDP + CPU offload</text><text class="tm" x="482" y="410">activation checkpointing</text>
+  <rect class="s-acc" x="674" y="378" width="218" height="40" rx="3"/><text class="t2" x="686" y="396">Megatron</text><text class="tm" x="686" y="410">TP / PP / EP / CP</text>
+
+  <text class="ts" x="8" y="448">(sync weights)</text>
+  <text class="tm" x="8" y="464">no such line</text>
+  <rect x="266" y="426" width="196" height="40" rx="3" fill="none" stroke="var(--line-2)" stroke-dasharray="4,3"/>
+  <text class="tm" x="278" y="450">— does not exist —</text>
+  <rect class="s-sig" x="470" y="426" width="196" height="40" rx="3"/><text class="ts" x="482" y="444">local handover</text><text class="tm" x="482" y="458">engines offload, reload</text>
+  <rect class="s-sig" x="674" y="426" width="218" height="40" rx="3"/><text class="ts" x="686" y="444">in-flight NCCL sync</text><text class="tm" x="686" y="458">every update, over network</text>
+
+  <line class="ln" x1="8" y1="492" x2="892" y2="492"/>
+  <text class="lbl" x="8" y="514">LEGEND</text>
+  <rect class="s-ok"  x="90" y="500" width="16" height="16" rx="2"/><text class="tm" x="114" y="513">in-process — a few lines of Python</text>
+  <rect class="s-acc" x="380" y="500" width="16" height="16" rx="2"/><text class="tm" x="404" y="513">a library takes the slot over</text>
+  <rect class="s-sig" x="650" y="500" width="16" height="16" rx="2"/><text class="tm" x="674" y="513">a new distributed problem</text>
+  <text class="ts" x="8" y="546">Read the orange down each column: ch07 has none, SWE has two, 397B has four.</text>
+  <text class="tm" x="8" y="568">That count — not the model size — is what "harder to operate" actually means.</text>
+</svg>
+</div>
+<figcaption>The green band across the middle is the point: <b>the algorithm slot is byte-for-byte the same idea in all three</b>. Everything above and below it is logistics. The bottom row exists in two of the three stacks and has no counterpart in your file at all — it is created purely by separating generation from training.</figcaption>
+</figure>
+
+
+<p>A natural follow-up: <strong>where does Hugging Face sit in any of this?</strong> All three use a
+Qwen3 checkpoint, so it is tempting to assume HF plays the same role everywhere. It does not — and
+"HF" is really five separable products, each adopted or declined independently.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 430" role="img" aria-label="Which Hugging Face products each of the three stacks uses, and where HF's involvement ends">
+  <text class="lbl" x="8" y="20">HUGGING FACE, PIECE BY PIECE</text>
+  <text class="lbl" x="288" y="20">ch07 · 0.6B</text>
+  <text class="lbl" x="492" y="20">phitrain SWE · 14B</text>
+  <text class="lbl" x="700" y="20">SkyRL · 397B</text>
+  <line class="ln" x1="8" y1="28" x2="892" y2="28"/>
+
+  <text class="t2" x="8" y="52">the Hub</text>
+  <text class="tm" x="8" y="66">huggingface.co as a file host</text>
+  <rect class="s-ok" x="284" y="38" width="196" height="38" rx="3"/>
+  <text class="tm" x="294" y="54">yes — rasbt/qwen3-</text><text class="tm" x="294" y="68">from-scratch</text>
+  <rect class="s-ok" x="488" y="38" width="200" height="38" rx="3"/>
+  <text class="tm" x="498" y="54">yes — mirrored to</text><text class="tm" x="498" y="68">/mnt/pvc</text>
+  <rect class="s-ok" x="696" y="38" width="196" height="38" rx="3"/>
+  <text class="tm" x="706" y="60">yes</text>
+
+  <text class="t2" x="8" y="106">checkpoint format</text>
+  <text class="tm" x="8" y="120">config.json + safetensors</text>
+  <rect x="284" y="92" width="196" height="38" rx="3" fill="none" stroke="var(--line-2)" stroke-dasharray="4,3"/>
+  <text class="ts" x="294" y="108">no — a plain</text><text class="tm" x="294" y="122">torch .pth state dict</text>
+  <rect class="s-ok" x="488" y="92" width="200" height="38" rx="3"/>
+  <text class="tm" x="498" y="108">yes — an HF-format</text><text class="tm" x="498" y="122">directory on disk</text>
+  <rect class="s-acc" x="696" y="92" width="196" height="38" rx="3"/>
+  <text class="tm" x="706" y="108">yes, but converted</text><text class="tm" x="706" y="122">into Megatron shards</text>
+
+  <text class="t2" x="8" y="160">tokenizers</text>
+  <text class="tm" x="8" y="174">the Rust BPE library</text>
+  <rect class="s-ok" x="284" y="146" width="196" height="38" rx="3"/>
+  <text class="tm" x="294" y="162">yes — `from tokenizers</text><text class="tm" x="294" y="176">import Tokenizer`</text>
+  <rect class="s-ok" x="488" y="146" width="200" height="38" rx="3"/>
+  <text class="tm" x="498" y="168">yes — AutoTokenizer</text>
+  <rect class="s-ok" x="696" y="146" width="196" height="38" rx="3"/>
+  <text class="tm" x="706" y="168">yes</text>
+
+  <rect x="4" y="192" width="888" height="56" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text class="t" x="8" y="212">transformers</text>
+  <text class="tm" x="8" y="228">the model definition itself</text>
+  <text class="tm" x="8" y="242">— the one that matters</text>
+  <rect x="284" y="200" width="196" height="40" rx="3" fill="none" stroke="var(--signal)" stroke-dasharray="4,3"/>
+  <text class="ts" x="294" y="216">NO — hand-written</text><text class="tm" x="294" y="232">Qwen3Model, pure torch</text>
+  <rect class="s-ok" x="488" y="200" width="200" height="40" rx="3"/>
+  <text class="t2" x="498" y="216">YES — AutoModelFor-</text><text class="t2" x="498" y="232">CausalLM + FA2</text>
+  <rect x="696" y="200" width="196" height="40" rx="3" fill="none" stroke="var(--signal)" stroke-dasharray="4,3"/>
+  <text class="ts" x="706" y="216">NO — Megatron owns</text><text class="tm" x="706" y="232">the model definition</text>
+
+  <text class="t2" x="8" y="278">datasets</text>
+  <text class="tm" x="8" y="292">loading and streaming</text>
+  <rect x="284" y="264" width="196" height="38" rx="3" fill="none" stroke="var(--line-2)" stroke-dasharray="4,3"/>
+  <text class="tm" x="294" y="286">no — plain JSON files</text>
+  <rect class="s-ok" x="488" y="264" width="200" height="38" rx="3"/>
+  <text class="tm" x="498" y="280">yes — load_dataset(</text><text class="tm" x="498" y="294">"R2E-Gym/R2E-Gym-Lite")</text>
+  <rect x="696" y="264" width="196" height="38" rx="3" fill="none" stroke="var(--line-2)" stroke-dasharray="4,3"/>
+  <text class="tm" x="706" y="286">task-specific harness</text>
+
+  <line class="ln" x1="8" y1="322" x2="892" y2="322"/>
+  <text class="lbl" x="8" y="344">SO WHEN DOES HF'S JOB END?</text>
+  <rect class="s-box" x="284" y="352" width="196" height="66" rx="4"/>
+  <text class="ts" x="294" y="370">at load time.</text>
+  <text class="tm" x="294" y="386">Downloads a .pth, builds</text>
+  <text class="tm" x="294" y="400">a tokenizer, and exits.</text>
+  <text class="tm" x="294" y="414">Nothing HF runs in the loop.</text>
+  <rect class="s-ok" x="488" y="352" width="200" height="66" rx="4"/>
+  <text class="t2" x="498" y="370">at the module level.</text>
+  <text class="tm" x="498" y="386">HF defines what the layers</text>
+  <text class="tm" x="498" y="400">ARE; phitrain rewrites how</text>
+  <text class="tm" x="498" y="414">they shard and run.</text>
+  <rect class="s-acc" x="696" y="352" width="196" height="66" rx="4"/>
+  <text class="ta" x="706" y="370">at conversion.</text>
+  <text class="tm" x="706" y="386">HF is the interchange</text>
+  <text class="tm" x="706" y="400">format between systems;</text>
+  <text class="tm" x="706" y="414">Megatron owns the runtime.</text>
+</svg>
+</div>
+<figcaption><b>The blue band is the load-bearing row.</b> Whether <code>transformers</code> defines your model decides everything else. ch07 declines it and hand-writes <code>Qwen3Model</code> in pure torch — which is why the book can show you attention as <code>q @ k.T</code>. phitrain accepts it, so <code>attn_implementation: flash_attention_2</code> in the YAML is a <code>transformers</code> kwarg and FSDP is wrapping an HF module. Megatron declines it too, for the opposite reason: it needs its own parallelism-aware layers.</figcaption>
+</figure>
+
+<p class="note"><b>The short answer to "does HF's job end once the model is loaded?"</b> In ch07,
+yes — HF is a CDN and a tokenizer library, nothing more. In the SWE stack it supplies the
+<em>module definition</em>, which phitrain then rewrites in place — see the next section. At 397B
+the HF module is never instantiated at all: the weights are converted and Megatron's own layer
+classes run. <b>TRL is used by none of them</b> — <code>grep -rl "from trl" phitrain/</code> is empty.</p>
+
+<h2>3 · How the checkpoint becomes a running model</h2>
+
+<p>All three start from Qwen3 weights, so "we load an HF checkpoint" sounds like the same sentence
+three times. It is not. The question that separates them is <strong>whether the Hugging Face
+<code>nn.Module</code> ever exists inside the training process at all.</strong></p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 610" role="img" aria-label="Three pipelines from checkpoint file to a running training step">
+  <defs><marker id="c1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+
+  <text class="lbl" x="8" y="20">ch07 — NO HF MODULE</text>
+  <rect class="s-box" x="8" y="30" width="280" height="52" rx="4"/>
+  <text class="t2" x="20" y="50">qwen3-0.6B-base.pth</text>
+  <text class="tm" x="20" y="68">a plain torch state dict</text>
+  <line class="ar" x1="148" y1="82" x2="148" y2="106" marker-end="url(#c1)"/>
+  <text class="tm" x="156" y="98">torch.load</text>
+  <rect class="s-ok" x="8" y="110" width="280" height="60" rx="4"/>
+  <text class="t2" x="20" y="130">class Qwen3Model(nn.Module)</text>
+  <text class="tm" x="20" y="148">hand-written, pure torch</text>
+  <text class="tm" x="20" y="164">load_state_dict()</text>
+  <line class="ar" x1="148" y1="170" x2="148" y2="194" marker-end="url(#c1)"/>
+  <text class="tm" x="156" y="186">.to("cuda:0")</text>
+  <rect class="s-box" x="8" y="198" width="280" height="46" rx="4"/>
+  <text class="t2" x="20" y="220">one module, one GPU</text>
+  <text class="tm" x="20" y="236">nothing sharded, nothing wrapped</text>
+  <text class="ts" x="8" y="274">HF's involvement ended at</text>
+  <text class="ts" x="8" y="290">the download URL.</text>
+
+  <text class="lbl" x="306" y="20">phitrain — HF MODULE, REWRITTEN IN PLACE</text>
+  <rect class="s-box" x="306" y="30" width="288" height="52" rx="4"/>
+  <text class="t2" x="318" y="50">Qwen3-14B/</text>
+  <text class="tm" x="318" y="68">config.json + safetensors</text>
+  <line class="ar" x1="450" y1="82" x2="450" y2="106" marker-end="url(#c1)"/>
+  <text class="tm" x="458" y="98">AutoModelForCausalLM.from_pretrained</text>
+  <rect class="s-acc" x="306" y="110" width="288" height="60" rx="4"/>
+  <text class="t2" x="318" y="130">a real HF PreTrainedModel</text>
+  <text class="tm" x="318" y="148">intact · unsharded · HF layer classes</text>
+  <text class="tm" x="318" y="164">exposes model.layers by convention</text>
+  <line class="ar" x1="450" y1="170" x2="450" y2="194" marker-end="url(#c1)"/>
+  <text class="ta" x="458" y="186">configure_parallelisms()</text>
+
+  <rect x="306" y="198" width="288" height="180" rx="4" fill="var(--panel-2)" stroke="var(--accent)" stroke-width="1.5"/>
+  <text class="lbl" x="318" y="218" fill="var(--accent)">MUTATES THE SAME OBJECT, IN PLACE</text>
+  <text class="t2" x="318" y="240">apply_tp(model, tp_mesh)</text>
+  <text class="tm" x="318" y="254">shard linears across tensor_parallel</text>
+  <text class="t2" x="318" y="276">apply_ac(model, layers_attr)</text>
+  <text class="tm" x="318" y="290">wrap layers in activation checkpointing</text>
+  <text class="t2" x="318" y="312">apply_fsdp(model, dp_mesh)</text>
+  <text class="tm" x="318" y="326">fully_shard() each decoder layer — FSDP2</text>
+  <text class="t2" x="318" y="348">_apply_ulysses_sp(model)</text>
+  <text class="tm" x="318" y="362">patch attention for sequence parallel</text>
+
+  <line class="ar" x1="450" y1="378" x2="450" y2="400" marker-end="url(#c1)"/>
+  <rect class="s-ok" x="306" y="404" width="288" height="46" rx="4"/>
+  <text class="t2" x="318" y="426">the SAME python object</text>
+  <text class="tm" x="318" y="442">now sharded, checkpointed, kernelized</text>
+  <text class="ts" x="306" y="480">HF supplied the skeleton.</text>
+  <text class="ts" x="306" y="496">phitrain rewrote how it runs.</text>
+
+  <text class="lbl" x="612" y="20">SkyRL / Megatron — HF MODULE NEVER EXISTS</text>
+  <rect class="s-box" x="612" y="30" width="280" height="52" rx="4"/>
+  <text class="t2" x="624" y="50">Qwen3/</text>
+  <text class="tm" x="624" y="68">config.json + safetensors</text>
+  <line class="arS" x1="752" y1="82" x2="752" y2="106" marker-end="url(#c1)"/>
+  <text class="ts" x="760" y="98">offline converter</text>
+  <rect class="s-sig" x="612" y="110" width="280" height="60" rx="4"/>
+  <text class="t2" x="624" y="130">Megatron sharded checkpoint</text>
+  <text class="tm" x="624" y="148">one shard per TP / PP / EP rank</text>
+  <text class="tm" x="624" y="164">a different file layout entirely</text>
+  <line class="ar" x1="752" y1="170" x2="752" y2="194" marker-end="url(#c1)"/>
+  <text class="tm" x="760" y="186">load</text>
+  <rect class="s-box" x="612" y="198" width="280" height="60" rx="4"/>
+  <text class="t2" x="624" y="218">Megatron's own layer classes</text>
+  <text class="tm" x="624" y="236">ParallelTransformerLayer etc.</text>
+  <text class="tm" x="624" y="252">parallelism baked into the module</text>
+  <text class="ts" x="612" y="290">HF is a file format on disk.</text>
+  <text class="ts" x="612" y="306">No HF code runs in training.</text>
+
+  <line class="ln" x1="8" y1="530" x2="892" y2="530"/>
+  <text class="lbl" x="8" y="552">THE DISTINCTION</text>
+  <text class="tm" x="8" y="574">ch07 declines HF's module. Megatron declines it too, and converts the weights out of HF format.</text>
+  <text class="ts" x="8" y="596">phitrain is the interesting middle: it KEEPS the HF module and surgically rewrites it.</text>
+</svg>
+</div>
+<figcaption>Your three-way summary was right; this is the mechanism underneath it. Note the middle path never converts anything — the weights stay in HF format on disk and the object stays an HF <code>PreTrainedModel</code> in memory. What changes is how its parameters are distributed and how its layers execute.</figcaption>
+</figure>
+
+<h3 class="sub">What "rewritten in place" actually means</h3>
+
+<p>The mutation is not a wrapper around the model — it reaches into the decoder stack and replaces
+what each layer is and where its parameters live.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 350" role="img" aria-label="One decoder layer before and after phitrain's parallelism pass">
+  <defs><marker id="d1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+
+  <text class="lbl" x="8" y="20">AS LOADED — model.layers[i]</text>
+  <rect class="s-box" x="8" y="30" width="240" height="200" rx="4"/>
+  <rect class="s-box" x="24" y="48" width="208" height="36" rx="3"/><text class="t2" x="36" y="70">self_attn (q,k,v,o)</text>
+  <rect class="s-box" x="24" y="92" width="208" height="36" rx="3"/><text class="t2" x="36" y="114">mlp (gate,up,down)</text>
+  <rect class="s-box" x="24" y="136" width="208" height="36" rx="3"/><text class="t2" x="36" y="158">input_layernorm</text>
+  <rect class="s-box" x="24" y="180" width="208" height="36" rx="3"/><text class="t2" x="36" y="202">post_attn_layernorm</text>
+  <text class="tm" x="8" y="252">plain HF modules</text>
+  <text class="tm" x="8" y="268">full params on every rank</text>
+  <text class="tm" x="8" y="284">stock torch/SDPA kernels</text>
+
+  <line class="ar" x1="256" y1="130" x2="322" y2="130" marker-end="url(#d1)" stroke-width="2"/>
+  <text class="ta" x="262" y="120">4 passes</text>
+
+  <rect class="s-acc" x="330" y="30" width="228" height="200" rx="4"/>
+  <text class="lbl" x="342" y="50">WHAT EACH PASS DOES</text>
+  <text class="ts" x="342" y="76">apply_tp</text>
+  <text class="tm" x="342" y="90">q,k,v,o and mlp linears become</text>
+  <text class="tm" x="342" y="104">column/row-sharded across ranks</text>
+  <text class="ts" x="342" y="128">apply_ac</text>
+  <text class="tm" x="342" y="142">layer wrapped so activations are</text>
+  <text class="tm" x="342" y="156">recomputed, not stored</text>
+  <text class="ts" x="342" y="180">apply_fsdp</text>
+  <text class="tm" x="342" y="194">fully_shard(layer) — params split</text>
+  <text class="tm" x="342" y="208">across DP ranks, gathered per use</text>
+  <text class="ts" x="342" y="224">ulysses / kernelize — attention + fused kernels</text>
+
+  <line class="ar" x1="566" y1="130" x2="632" y2="130" marker-end="url(#d1)" stroke-width="2"/>
+
+  <text class="lbl" x="640" y="20">AFTER — SAME OBJECT</text>
+  <rect class="s-ok" x="640" y="30" width="252" height="200" rx="4"/>
+  <rect class="s-acc" x="656" y="48" width="220" height="36" rx="3"/><text class="t2" x="668" y="70">self_attn — TP-sharded,</text>
+  <text class="tm" x="668" y="82">                 SP-patched</text>
+  <rect class="s-acc" x="656" y="92" width="220" height="36" rx="3"/><text class="t2" x="668" y="114">mlp — TP-sharded, Liger</text>
+  <rect class="s-ok" x="656" y="136" width="220" height="36" rx="3"/><text class="t2" x="668" y="158">norms — fused kernel</text>
+  <rect class="s-ok" x="656" y="180" width="220" height="36" rx="3"/><text class="tm" x="668" y="202">wrapped: AC + FSDP2 unit</text>
+  <text class="ts" x="640" y="252">same class, same forward signature</text>
+  <text class="tm" x="640" y="268">params now DTensors, not Tensors</text>
+  <text class="tm" x="640" y="284">1/N of the weights resident per rank</text>
+
+  <line class="ln" x1="8" y1="306" x2="892" y2="306"/>
+  <text class="tm" x="8" y="328">phitrain depends on HF for one thing here: the CONVENTION that decoder layers live at `model.layers`.</text>
+  <text class="ts" x="8" y="346">That dotted path (`_resolve_layers_attr`) is the whole interface. Everything else it supplies itself.</text>
+</svg>
+</div>
+<figcaption><b>The parameters stop being ordinary tensors.</b> After <code>fully_shard</code>, each rank holds a slice, gathered on demand for a layer's forward and released after — which is why <code>fsdp_offload</code> and <code>activation_checkpointing</code> in your YAML are memory knobs rather than speed knobs. The class is still <code>Qwen3DecoderLayer</code>; what it contains is not.</figcaption>
+</figure>
+
+<p class="note"><b>Why phitrain can do this and Megatron cannot.</b> Rewriting in place only works if
+the module follows a predictable shape — a list of homogeneous decoder layers at a known attribute.
+That holds for dense models like Qwen3-14B, so FSDP2 sharding plus optional TP is enough. Megatron
+targets models where parallelism must be designed into the layer itself (pipeline stages, expert
+routing across ranks), which cannot be retrofitted onto a module written without it. That is the
+real reason 397B converts and 14B does not.</p>
+
+<h2>4 · The eight slots, three ways</h2>
+
+<div class="tw">
+<table>
+<tr><th>Slot</th><th class="w">ch07 — 0.6B, 1 GPU</th><th class="w">phitrain SWE — 14B, 8 GPUs</th><th class="w">SkyRL — 397B, 20 nodes</th></tr>
+
+<tr><td><b>orchestration</b></td>
+<td class="w"><code>for step in range(steps)</code></td>
+<td class="w"><b>Ray</b> + phitrain <code>RayTuner</code> / <code>RayGRPOTuner</code></td>
+<td class="w"><b>SkyRL</b> — fully-async loop</td></tr>
+
+<tr><td><b>generation</b></td>
+<td class="w">Python loop, one sequence at a time, naive <code>q@k.T</code> attention</td>
+<td class="w"><b>vLLM</b> — TP=1, prefix caching, <code>preemption_mode: recompute</code></td>
+<td class="w"><b>vLLM</b> — 12 nodes, 300 concurrent</td></tr>
+
+<tr><td><b>trainer</b></td>
+<td class="w">AdamW over all params on one device</td>
+<td class="w"><b>PyTorch FSDP</b> — <code>fsdp_offload</code>, activation checkpointing, FA2, bf16</td>
+<td class="w"><b>Megatron</b> — TP / PP / EP / CP</td></tr>
+
+<tr><td><b>placement</b></td>
+<td class="w">n/a — one process</td>
+<td class="w"><b>colocated</b> — engines offloaded while the trainer runs</td>
+<td class="w"><b>disjoint</b> — 12:8 node split</td></tr>
+
+<tr><td><b>weight sync</b></td>
+<td class="bad">none — same object</td>
+<td class="w"><code>ColocatedWeightSynchronizer</code> (local handover; <code>BroadcastWeightSynchronizer</code> if disjoint)</td>
+<td class="w">in-flight NCCL sync, every update</td></tr>
+
+<tr><td><b>environment</b></td>
+<td class="w">none — the prompt is a string</td>
+<td class="w"><b>phiagent</b> — <code>mini_swe</code> ToolCallingAgent, real repo in a <b>Docker container</b>, 64 turns of bash</td>
+<td class="w">pluggable agent harness</td></tr>
+
+<tr><td><b>reward</b></td>
+<td class="w"><code>reward_rlvr()</code> — sympy symbolic equality, inline</td>
+<td class="w"><code>PatchTestReward</code> → <code>R2EGymVerifier</code> — <b>applies the patch and runs the repo's tests</b></td>
+<td class="w">separate verifier service</td></tr>
+
+<tr><td><b>algorithm</b></td>
+<td class="w">plain policy gradient, group-normalised advantage</td>
+<td class="w">GRPO + clip (ε=0.2) + KL 1e-3, <code>advantage_normalization: prompt</code></td>
+<td class="w">DPPO, <code>prompt_mean</code></td></tr>
+
+<tr><td>batch</td>
+<td class="w">1 prompt × 8 rollouts</td>
+<td class="w">8 prompts × 32 rollouts, micro-batch 1/GPU</td>
+<td class="w">32 prompts × 8 samples</td></tr>
+
+<tr><td>context</td>
+<td class="w">1024 tokens</td>
+<td class="w">32k (16k prompt + 16k response)</td>
+<td class="w">—</td></tr>
+</table>
+</div>
+
+<p class="note"><b>Answering the question directly:</b> for SWE, <b>Ray + phitrain's <code>RayTuner</code>
+replaces SkyRL</b>, and <b>PyTorch FSDP replaces Megatron</b>. There is no Megatron anywhere in
+phitrain — a 14B dense model with CPU offload fits under plain FSDP sharding, so none of tensor,
+pipeline, expert or context parallelism is needed. vLLM is the one component all three stacks share.</p>
+
+<h2>5 · What a "rollout" actually is</h2>
+
+<p>This is the largest difference between the three, and it is not a scaling difference — it is a
+difference in what the task <em>is</em>.</p>
+
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 900 430" role="img" aria-label="A rollout in ch07 is one completion; in SWE it is a 64-turn agent session against a Docker container">
+  <defs><marker id="r1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+
+  <text class="lbl" x="8" y="20">ch07 — ONE COMPLETION</text>
+  <rect class="s-box" x="8" y="30" width="150" height="44" rx="4"/><text class="t2" x="24" y="58">math problem</text>
+  <line class="ar" x1="162" y1="52" x2="192" y2="52" marker-end="url(#r1)"/>
+  <rect class="s-acc" x="196" y="30" width="200" height="44" rx="4"/><text class="t2" x="212" y="58">generate ≤1024 tokens</text>
+  <line class="ar" x1="400" y1="52" x2="430" y2="52" marker-end="url(#r1)"/>
+  <rect class="s-box" x="434" y="30" width="180" height="44" rx="4"/><text class="t2" x="450" y="58">sympy equality</text>
+  <line class="ar" x1="618" y1="52" x2="648" y2="52" marker-end="url(#r1)"/>
+  <rect class="s-ok" x="652" y="30" width="150" height="44" rx="4"/><text class="t2" x="668" y="58">reward 0 or 1</text>
+  <text class="tm" x="8" y="98">One forward pass worth of interaction. Milliseconds of CPU to score.</text>
+
+  <line class="ln" x1="8" y1="120" x2="892" y2="120"/>
+
+  <text class="lbl" x="8" y="148">phitrain SWE — A 64-TURN AGENT SESSION</text>
+  <rect class="s-box" x="8" y="160" width="170" height="44" rx="4"/><text class="t2" x="24" y="188">GitHub issue text</text>
+  <line class="ar" x1="182" y1="182" x2="212" y2="182" marker-end="url(#r1)"/>
+
+  <rect x="216" y="146" width="420" height="150" rx="5" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text class="lbl" x="230" y="166" fill="var(--accent)">UP TO 64 TURNS</text>
+  <rect class="s-acc" x="232" y="176" width="180" height="40" rx="3"/><text class="t2" x="248" y="200">model emits tool_call</text>
+  <line class="ar" x1="416" y1="196" x2="442" y2="196" marker-end="url(#r1)"/>
+  <rect class="s-box" x="446" y="176" width="176" height="40" rx="3"/><text class="t2" x="462" y="200">bash in Docker</text>
+  <path class="ar" d="M534,220 V244 H322 V220" marker-end="url(#r1)"/>
+  <text class="tm" x="360" y="262">observation back into context</text>
+  <text class="tm" x="232" y="286">4096 tokens/turn · 32k total · real repo checked out</text>
+
+  <line class="ar" x1="640" y1="196" x2="668" y2="196" marker-end="url(#r1)"/>
+  <rect class="s-box" x="672" y="160" width="216" height="60" rx="4"/>
+  <text class="t2" x="688" y="182">apply the patch,</text>
+  <text class="t2" x="688" y="200">run the repo's tests</text>
+  <text class="tm" x="688" y="216">R2EGymVerifier, 300s timeout</text>
+
+  <rect class="s-ok" x="672" y="238" width="216" height="58" rx="4"/>
+  <text class="t2" x="688" y="260">shaped reward</text>
+  <text class="tm" x="688" y="278">submitted · applicable · regressions</text>
+
+  <line class="ln" x1="8" y1="318" x2="892" y2="318"/>
+  <text class="ts" x="8" y="342">The environment is a container, not a string. The verifier is a test suite, not a comparison.</text>
+  <text class="tm" x="8" y="364">That is why phiagent exists at all: something has to own the tool codec, the turn loop, the container</text>
+  <text class="tm" x="8" y="382">lifecycle and the parse errors — none of which appear anywhere in ch07.</text>
+  <text class="tm" x="8" y="408">64 concurrent agents (agent_max_concurrency), each with a live Docker container, per training step.</text>
+</svg>
+</div>
+<figcaption>ch07's rollout is <b>one model call</b>. SWE's rollout is <b>an agent session</b>: up to 64 tool calls, each running bash inside a per-rollout Docker container holding a real repository, ending in a patch that gets applied and tested. The reward is not 0/1 — it is shaped, with partial credit for submitting, for the patch applying, and penalties for regressions.</figcaption>
+</figure>
+<h2>6 · Who owns what — the phitrain / phiagent split</h2>
+
+<p>The SWE stack is two in-house layers over open-source parts. The split is by <em>concern</em>,
+not by scale:</p>
+
+<div class="cols">
+  <div class="card">
+    <h3>phiagent — the task side</h3>
+    <p>What a rollout <em>is</em>. Agents (<code>mini_swe</code>, ToolCallingAgent), tool-call codecs (hermes vs xml), environment providers (R2E-Gym, SWE-bench Docker), verifiers, message formatters. Knows nothing about GPUs or gradients.</p>
+  </div>
+  <div class="card">
+    <h3>phitrain — the training side</h3>
+    <p>What happens to the trajectories. Ray tuners (<code>grpo</code>, <code>ppo</code>, <code>cispo</code>, <code>isft</code>, <code>opd</code>), FSDP actors, the rollout pool, weight sync, datasets, checkpointing. Knows nothing about bash or patches.</p>
+  </div>
+  <div class="card">
+    <h3>Ray — the substrate</h3>
+    <p>Process placement, actor lifecycle, cross-worker RPC. <code>RayTuner</code> is where the loop lives; <code>ray_worker.py</code> is what runs on each GPU. This is the layer SkyRL occupies in the frontier stack.</p>
+  </div>
+  <div class="card">
+    <h3>The recipe — the glue</h3>
+    <p><code>recipes/rl/tool_agent/</code> is a thin binding: it registers the R2E-Gym env provider and <code>PatchTestReward</code>, then hands a config to <code>get_tuner</code>. The YAML you read <em>is</em> the experiment.</p>
+  </div>
+</div>
+
+<p class="note"><b>The seam to notice:</b> phiagent and phitrain meet only at the <code>Task</code> —
+an agent, a reward, a verifier, a dataset. Everything above that line is "what does a good answer
+look like"; everything below is "how do I get gradients onto 8 GPUs". SkyRL draws the same line and
+calls the upper half an <em>agent harness</em>.</p>
+
+<h2>7 · The same seam, three times: weight sync</h2>
+
+<div class="tw">
+<table>
+<tr><th>Stack</th><th class="w">Mechanism</th><th class="w">Cost</th><th class="w">Failure mode it introduces</th></tr>
+<tr><td>ch07</td><td class="w"><b>None.</b> Generation and training are the same tensors.</td><td class="w">zero</td><td class="w">none — divergence is impossible</td></tr>
+<tr><td>SWE (colocated)</td><td class="w"><code>ColocatedWeightSynchronizer</code> — trainer and engines share devices; engines offload while training runs, then take the new weights locally.</td><td class="w">GPU idle time: one tenant waits while the other works</td><td class="w">memory pressure between two tenants; offload/reload stalls</td></tr>
+<tr><td>397B (disjoint)</td><td class="w">in-flight NCCL broadcast from trainer shards to engine shards, every update</td><td class="w">network bandwidth; both sides must stay busy</td><td class="w"><b>silent numerical divergence</b> — two forward implementations that must agree</td></tr>
+</table>
+</div>
+
+<p>phitrain also ships <code>BroadcastWeightSynchronizer</code>, which is the disjoint mechanism —
+the same idea as the frontier stack. The SWE config simply does not need it at 8 GPUs.</p>
+
+<h2>8 · Which stack a job needs</h2>
+
+<div class="tw">
+<table>
+<tr><th>If this is true…</th><th class="w">…you need</th></tr>
+<tr><td>model + optimizer fit on one device</td><td class="w">a single file. Adding a framework buys nothing.</td></tr>
+<tr><td>generation dominates wall-clock</td><td class="w"><b>vLLM</b> — the first thing worth adding, and it works colocated</td></tr>
+<tr><td>weights + grads + Adam exceed one device</td><td class="w"><b>FSDP</b> (and CPU offload) — no model surgery required</td></tr>
+<tr><td>the task is multi-turn, or needs a sandbox</td><td class="w">an <b>agent harness</b> — phiagent, or SkyRL's equivalent</td></tr>
+<tr><td>a single layer exceeds one device, or MoE</td><td class="w"><b>Megatron</b> — TP/PP/EP/CP</td></tr>
+<tr><td>one plane idling is too expensive</td><td class="w"><b>disjoint placement + async</b> — and the weight-sync problem that comes with it</td></tr>
+</table>
+</div>
+
+<p>The three examples sit at three rungs of that ladder, and each adds exactly the machinery its
+constraint demands — no more. ch07 needs none of it. SWE needs vLLM, FSDP and an agent harness, but
+not model parallelism and not async. The 397B run needs everything.</p>
+
+<footer>
+reasoning-from-scratch · _reports/0904 · 2026-09-04<br>
+Sources read directly: ch07/01_main-chapter-code/submit_03_tracking.py · phitrain/recipes/rl/tool_agent/configs/swe_task/r2egym_q14b.yaml · phitrain/rl/tuners/{registry,ray_tuner}.py · phitrain/rl/rollout/{pool,weight_sync}.py · Mercor, "Training frontier knowledge work agents: a 397B RL training guide with SkyRL"
+</footer>
+
+</div>
