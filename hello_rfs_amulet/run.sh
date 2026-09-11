@@ -5,6 +5,7 @@
 #   ./run.sh smoke
 #   ./run.sh tracking -d "500 steps, run 1"
 #   EXPERIMENT=agoswami-rfs-scratch ./run.sh smoke
+#   DRY_RUN=1 ./run.sh smoke          # print the command, submit nothing
 #
 # Job names must be unique within an experiment, so each run gets a timestamp
 # suffix via Amulet's :job=alias syntax.
@@ -12,11 +13,17 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-JOB="${1:?usage: ./run.sh <smoke|smoke-wandb|baseline|tracking> [extra amlt run args]}"
+JOB="${1:?usage: ./run.sh <smoke|smoke-wandb|baseline|tracking|clip-ratio|kl|format> [extra amlt run args]}"
 shift
 
+PROJECT="agoswami-rfs"
 EXPERIMENT="${EXPERIMENT:-agoswami-rfs-ch07}"
-JOB_NAME="${JOB}-$(date +%Y%m%d-%H%M%S)"
+# Prefixed with the alias so the job is identifiable in shared views -- notably
+# W&B: phitrain passes no name= to wandb.init (handlers.py:169), so the SDK falls
+# back to WANDB_NAME, which Amulet sets to this job name. Runs land in the team
+# project, so the prefix is how you find yours.
+USER_ALIAS="${USER_ALIAS:-agoswami}"
+JOB_NAME="${USER_ALIAS}-${JOB}-$(date +%Y%m%d-%H%M%S)"
 LEDGER="RUNS.md"
 
 # Amulet resolves every single-$ variable in train.yaml at config-load time,
@@ -29,6 +36,13 @@ export FEDRAMP_SCANNER_SCAN_MODE="${FEDRAMP_SCANNER_SCAN_MODE:-none}"
 
 CMD=(amlt run train.yaml ":${JOB}=${JOB_NAME}" "$EXPERIMENT" --sla Premium --yes "$@")
 echo "+ ${CMD[*]}"
+
+# DRY_RUN=1 ./run.sh <job>  -- print the assembled command and stop. Nothing is
+# submitted and no ledger entry is written.
+if [ -n "${DRY_RUN:-}" ]; then
+  echo "(DRY_RUN set -- not submitting)"
+  exit 0
+fi
 
 OUT="$(mktemp)"
 trap 'rm -f "$OUT"' EXIT
@@ -49,6 +63,7 @@ flock 9
 L_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')" \
 L_JOB="$JOB" \
 L_JOB_NAME="$JOB_NAME" \
+L_PROJECT="$PROJECT" \
 L_EXPERIMENT="$EXPERIMENT" \
 L_PORTAL="$(grep -oE 'https://aka\.ms/amlt\?q=[A-Za-z0-9]+' "$OUT" | head -1 || true)" \
 L_GIT_SHA="$(git -C .. rev-parse --short HEAD 2>/dev/null || echo unknown)" \
@@ -63,6 +78,7 @@ portal = os.environ["L_PORTAL"]
 
 lines = [
     f'\n## {os.environ["L_TS"]} \u2014 `{os.environ["L_JOB_NAME"]}`\n',
+    f'- project: `{os.environ["L_PROJECT"]}` (aifrontierssadata/data)\n',
     f'- experiment: `{os.environ["L_EXPERIMENT"]}`\n',
     f'- status: **submitted** (as of {os.environ["L_TS"]})\n',
     f'- config job: `{os.environ["L_JOB"]}`\n',
