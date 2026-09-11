@@ -3,7 +3,6 @@
 # experiment, and record it in RUNS.md (newest first).
 #
 #   ./run.sh interactive-fast
-#   CONFIG=interactive.yaml ./run.sh interactive          # team-image variant
 #   EXPERIMENT=agoswami-scratch ./run.sh interactive-fast
 #   DRY_RUN=1 ./run.sh interactive-fast                   # print the command, submit nothing
 #

@@ -33,7 +33,8 @@ target:
   name: baltic01
   workspace_name: ai-frontiers-sa-ws
 
-# See interactive.yaml for the team-image variant (torch 2.10, slow cold start).
+# A team-image variant (torch 2.10) existed as interactive.yaml; removed 2026-09-11,
+# its cold start on baltic01 was ~70 min against ~7 min for the platform image.
 # Manifold platform image: short alias, no registry, resolved per-target by
 # Singularity so nothing is staged across regions. Starts in ~5 min regardless
 # of which node it lands on. Ships torch 2.8 rather than the team image's 2.10.

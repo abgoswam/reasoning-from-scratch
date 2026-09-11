@@ -303,17 +303,18 @@ metadata, so use team-approved credentials rather than personal long-lived token
 
 ## The config files
 
-Four configs, each changing one variable, so the effect of cluster and image can be read off
-directly.
+Two configs remain. The cluster/image matrix below was verified in 2026-09; the
+`baltic*.yaml` and `interactive.yaml` variants were removed on 2026-09-11 once their
+lesson was recorded, so the middle rows are a record, not files you can run.
 
 | File | Cluster | Image | Verified |
 | --- | --- | --- | --- |
 | `hello_world.yaml` | ai-frontiers-sa-vc | team ACR, in-region | passes — 3 min run |
-| `baltic.yaml` | baltic01 | `amlt-sing/acpt-torch2.8.x` platform | passes — ~5 min queue |
-| `baltic_acr_slim.yaml` | baltic01 | `python3.12-slim-pybox` from our ACR | passes — ~10 min queue |
-| `baltic_acr.yaml` | baltic01 | team ACR, multi-GB | under test |
-| `interactive.yaml` | baltic01 | team ACR | superseded by the `_fast` variant |
-| `interactive_fast.yaml` | baltic01 | `amlt-sing/acpt-torch2.8.x` platform | passes — ssh verified 2026-09-04 |
+| *(removed)* `baltic.yaml` | baltic01 | `amlt-sing/acpt-torch2.8.x` platform | passed — ~5 min queue |
+| *(removed)* `baltic_acr_slim.yaml` | baltic01 | `python3.12-slim-pybox` from our ACR | passed — ~10 min queue |
+| *(removed)* `baltic_acr.yaml` | baltic01 | team ACR, multi-GB | never completed testing |
+| *(removed)* `interactive.yaml` | baltic01 | team ACR | superseded by the `_fast` variant |
+| `interactive_fast.yaml` | baltic01 | `amlt-sing/acpt-torch2.8.x` platform | passes — ssh verified 2026-09-04, again 2026-09-11 |
 
 Submit any of them the same way:
 
@@ -544,7 +545,7 @@ shared GCR H100 cluster with 96 GPUs, usually mostly free. Both are driven by th
 
 **The one thing that changes is the image.** `aifrontierssacr` sits in `ASG Azure ML` /
 `southafricanorth`; `baltic01` nodes sit in `Singularity Shared` / `eastus2`. Pulling across that
-gap is permitted — `baltic_acr_slim.yaml` proves it, with no extra role assignments — but a
+gap is permitted — `baltic_acr_slim.yaml` proved it, with no extra role assignments — but a
 multi-GB CUDA image has to travel first, and that time is charged to your queue.
 
 So: prefer a **Manifold platform image** for a far cluster.
