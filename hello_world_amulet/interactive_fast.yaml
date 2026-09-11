@@ -1,13 +1,31 @@
 # Amulet config file. Docs: https://amulet-docs.azurewebsites.net/config_file.html
 # A long-lived interactive box on baltic01, held open for `amlt ssh`.
 #
-# The container stays up because `sleep infinity` is the foreground process. A
-# GPU keepalive runs in the background so the cluster does not reap the job for
-# having an idle GPU. The keepalive is wrapped in a respawn loop: if it dies the
-# GPU would go idle and the job would be reaped, which would look like an
-# unexplained disappearance.
+#   project:    agoswami-hello  (aifrontierssadata/data)
+#   experiment: agoswami-interactive
 #
-# This job runs until cancelled: amlt cancel <experiment> :interactive-fast
+# Submit via the wrapper -- it supplies -i, the scan-gate env var, a unique
+# timestamped job alias, and the RUNS.md ledger entry:
+#
+#   ./run.sh interactive-fast
+#   DRY_RUN=1 ./run.sh interactive-fast     # print the command, submit nothing
+#
+# `amlt ssh` REQUIRES the job to have been submitted with -i. run.sh passes it.
+#
+# Then, using the timestamped alias run.sh printed:
+#   python vscode_ssh_config.py agoswami-interactive <alias> --write
+#   amlt cancel agoswami-interactive :<alias>        # teardown
+#
+# --- why this differs from the first attempt (which ended Paused/Killed) ---
+# Modelled on the e5-mistral-ft-code keep_wake.py pattern, which holds jobs open
+# on Singularity for days. Three changes:
+#   1. nohup + explicit redirect, so the keepalive survives shell signals and its
+#      log is written unbuffered rather than through a backgrounded `tee`.
+#   2. Keepalive swapped for e5's proven keep_wake.py: 180s of matmul then 600s
+#      rest (~23% duty) instead of a 5s burst per 60s (~8%). A 5-second burst can
+#      fall entirely between an idle detector's samples; 3 minutes cannot.
+#   3. max_run_duration_seconds set explicitly. It was previously unset, so the
+#      platform default applied - a plausible cause of an unexplained Pause.
 description: Interactive H100 box on baltic01 with a platform image (fast start)
 
 target:
@@ -28,14 +46,30 @@ code:
 jobs:
   - name: interactive-fast
     priority: high
+    sla_tier: premium
     sku: 80G1-H100
     command:
       - set -e -o pipefail
       - mkdir -p "$$AMLT_OUTPUT_DIR"
-      - while true; do python gpu_keepalive.py --interval 60 --burst 5; echo "keepalive exited, respawning in 5s"; sleep 5; done 2>&1 | tee -a "$$AMLT_OUTPUT_DIR/keepalive.log" &
+      # keep_wake.py is copied VERBATIM from e5-mistral-ft-code, where this exact
+      # script holds Singularity jobs open for days. Hardcoded 180s of matmul on
+      # every visible GPU, then 600s rest. Do not "improve" it - the point is that
+      # this specific artifact is proven.
+      #
+      # nohup + redirect (not `| tee &`): survives SIGHUP, and writes the log
+      # directly so it is readable while the job runs. The outer respawn loop
+      # guards against the python process dying outright.
+      - nohup bash -c 'while true; do python keep_wake.py; echo "keepalive exited, respawning in 5s"; sleep 5; done' > "$$AMLT_OUTPUT_DIR/keepalive.log" 2>&1 &
+      - sleep 15
+      - echo "--- keepalive first lines ---"
+      - head -5 "$$AMLT_OUTPUT_DIR/keepalive.log" || true
       - echo "interactive box up on $$(hostname) - keepalive backgrounded, now idling for ssh"
       - nvidia-smi
       - sleep infinity
     submit_args:
+      # 7 days. Unset previously; e5's long-lived Singularity jobs set 14 days.
+      # Raise if a box needs to outlive this; it is a safety net against a
+      # forgotten H100, not a target.
+      max_run_duration_seconds: 604800
       env:
         AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"

@@ -1,5 +1,15 @@
 """Emit a ~/.ssh/config Host block for a running Amulet job, for VS Code Remote-SSH.
 
+Two targets:
+  (default)   WSL's ~/.ssh/config -- for VS Code running inside WSL, or plain ssh.
+  --windows   C:\\Users\\<user>\\.ssh\\config -- for VS Code running on Windows.
+
+The Windows variant rewrites three fields, because Amulet's block is WSL-bound:
+the ProxyCommand runs /opt/az/bin/python3 against the `az ml` extension under
+~/.azure/, neither of which exists on Windows. Prefixing `wsl.exe -e` delegates
+just the tunnel to WSL (and reuses WSL's `az login`), while ssh itself, the key,
+and VS Code stay on Windows.
+
 `amlt ssh` builds an ordinary ssh command whose websocket tunnel is just a
 ProxyCommand. This asks Amulet for that command, parses it, and reshapes it into
 a Host block that VS Code Remote-SSH can consume.
@@ -73,7 +83,32 @@ def _parse(argv: list[str]) -> dict[str, str]:
     return parsed
 
 
-def _block(alias: str, parsed: dict[str, str]) -> str:
+def _win_user(explicit: str | None) -> str:
+    """Windows username -- it differs from the WSL one on this box."""
+    if explicit:
+        return explicit
+    try:
+        out = subprocess.run(["cmd.exe", "/c", "echo %USERNAME%"], capture_output=True,
+                             text=True, timeout=15).stdout.strip()
+        if out and "%" not in out:
+            return out
+    except Exception:
+        pass
+    raise SystemExit("Could not detect the Windows username -- pass --win-user")
+
+
+def _to_windows(parsed: dict[str, str], win_user: str) -> dict[str, str]:
+    """Rewrite a WSL-shaped block for Windows ssh."""
+    out = dict(parsed)
+    # The connector is a WSL path; run it through WSL rather than porting it.
+    out["proxy"] = f"wsl.exe -e {parsed['proxy']}"
+    # Same key, Windows-side copy. Verified identical by fingerprint.
+    if "identity" in parsed:
+        out["identity"] = f"C:\\Users\\{win_user}\\.ssh\\{Path(parsed['identity']).name}"
+    return out
+
+
+def _block(alias: str, parsed: dict[str, str], windows: bool = False) -> str:
     lines = [
         BEGIN.format(alias=alias),
         f"Host {alias}",
@@ -85,15 +120,15 @@ def _block(alias: str, parsed: dict[str, str]) -> str:
     lines += [
         f"    ProxyCommand {parsed['proxy']}",
         "    StrictHostKeyChecking no",
-        "    UserKnownHostsFile /dev/null",
+        f"    UserKnownHostsFile {'NUL' if windows else '/dev/null'}",
         "    ServerAliveInterval 30",
         END.format(alias=alias),
     ]
     return "\n".join(lines)
 
 
-def _write(alias: str, block: str) -> Path:
-    path = Path.home() / ".ssh" / "config"
+def _write(alias: str, block: str, path: Path | None = None) -> Path:
+    path = path or Path.home() / ".ssh" / "config"
     path.parent.mkdir(mode=0o700, exist_ok=True)
     existing = path.read_text() if path.exists() else ""
 
@@ -105,7 +140,10 @@ def _write(alias: str, block: str) -> Path:
     updated = f"{updated}\n\n{block}\n" if updated else f"{block}\n"
 
     path.write_text(updated)
-    path.chmod(0o600)
+    try:
+        path.chmod(0o600)
+    except (PermissionError, OSError):
+        pass  # DrvFs (/mnt/c) does not hold Unix modes
     return path
 
 
@@ -116,19 +154,34 @@ def main() -> None:
     parser.add_argument("--alias", default=None, help="Host alias; defaults to amlt-<job>")
     parser.add_argument("--write", action="store_true", help="Update ~/.ssh/config in place")
     parser.add_argument("--dump", default=None, help="Write Amulet's raw output to this file")
+    parser.add_argument("--windows", action="store_true",
+                        help="Emit a block for Windows ssh / VS Code on Windows (wraps the "
+                             "ProxyCommand in wsl.exe and uses the Windows-side key).")
+    parser.add_argument("--win-user", default=None,
+                        help="Windows username; auto-detected via cmd.exe when omitted.")
     args = parser.parse_args()
 
     alias = args.alias or f"amlt-{args.job}"
-    block = _block(alias, _parse(_capture_ssh_command(args.experiment, args.job, args.dump)))
+    parsed = _parse(_capture_ssh_command(args.experiment, args.job, args.dump))
+
+    if args.windows:
+        win_user = _win_user(args.win_user)
+        parsed = _to_windows(parsed, win_user)
+        target = Path(f"/mnt/c/Users/{win_user}/.ssh/config")
+    else:
+        target = None
+
+    block = _block(alias, parsed, windows=args.windows)
 
     if args.write:
-        path = _write(alias, block)
+        path = _write(alias, block, target)
         print(f"\nUpdated {path}\n")
         print(block)
         print(f"\nVS Code: Remote-SSH: Connect to Host... -> {alias}")
     else:
+        where = target or (Path.home() / ".ssh" / "config")
         print(f"\n{block}\n")
-        print(f"Add that to ~/.ssh/config, or re-run with --write. Then in VS Code:")
+        print(f"Add that to {where}, or re-run with --write. Then in VS Code:")
         print(f"  Remote-SSH: Connect to Host... -> {alias}")
 
 

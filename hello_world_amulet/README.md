@@ -10,6 +10,32 @@ upload, scheduling, logs, and result download all work — before any real train
 The CLI is **`amlt`**, not `amulet`. The Amulet source and examples are cloned separately at
 `../../amulet/`; this folder is unrelated to that checkout.
 
+## Quick reference — interactive box
+
+In WSL, from this directory:
+
+```bash
+./run.sh interactive-fast                       # note the job name it prints
+amlt status agoswami-interactive                # wait for `running` (~5 min)
+python vscode_ssh_config.py agoswami-interactive <job-name> \
+    --windows --alias amlt-box --write          # always --windows for VS Code
+```
+
+In VS Code, open a **local window** (`File → New Window`, no remote indicator bottom-left)
+→ **Remote-SSH: Connect to Host…** → `amlt-box`
+
+Then in the VS Code terminal, on the node:
+
+```bash
+echo '[ -e /tmp/amlt-env ] && . /tmp/amlt-env' >> "$HOME/.bashrc"  # $HOME, not /root
+. /tmp/amlt-env                                                   # conda + python
+cd /scratch/amlt_code
+nohup python keep_wake.py > outputs/keepalive.log 2>&1 &          # or the box pauses
+```
+
+Both blocks are **per-job** — redo after every resubmit; the ssh endpoint is minted
+per submission. Full explanation: [Interactive box](#interactive-box--submit-ssh-and-connect-vs-code).
+
 ## Working directory matters
 
 **Every `amlt` command below must be run from this directory.** Amulet is directory-bound: the
@@ -42,8 +68,8 @@ Four moving parts. Getting them straight makes every command below obvious.
 
 ## Current state of this machine
 
-Steps 1–6 have **already been run** on `agoswami`'s box. Re-running them is harmless, but you do
-not need to. On a fresh machine, run all of them in order.
+Steps 1–8 have **already been run** on `agoswami`'s box. Re-running them is harmless, but you do
+not need to. On a fresh machine, run 1–6 in order; 7 and 8 are only needed if you want `amlt ssh`.
 
 | # | Step | Status here |
 | --- | --- | --- |
@@ -53,13 +79,17 @@ not need to. On a fresh machine, run all of them in order.
 | 4 | Create project | done — `agoswami-hello`, created 2026-09-03 06:56 |
 | 5 | Register workspace | done — `ai-frontiers-sa-ws` is the project default |
 | 6 | Check out project here | done — `.amltconfig` binds this folder |
+| 7 | `az extension add --name ml` | done — **only needed for `amlt ssh`**, see below |
+| 8 | SSH keypair in WSL `~/.ssh/` | done — copied from Windows, same fingerprint |
 
-Verify all six at once:
+Verify at once:
 
 ```bash
 amlt --version
 az account show --query "{subscription:name,user:user.name}" --output table
 amlt project
+az extension list --query "[].name" -o tsv      # expect 'ml' for amlt ssh
+ls -l ~/.ssh/id_ed25519                          # expect mode 600
 ```
 
 That last command should print `PROJECT_NAME agoswami-hello`, a `LOCAL_PATH` ending in
@@ -282,6 +312,8 @@ directly.
 | `baltic.yaml` | baltic01 | `amlt-sing/acpt-torch2.8.x` platform | passes — ~5 min queue |
 | `baltic_acr_slim.yaml` | baltic01 | `python3.12-slim-pybox` from our ACR | passes — ~10 min queue |
 | `baltic_acr.yaml` | baltic01 | team ACR, multi-GB | under test |
+| `interactive.yaml` | baltic01 | team ACR | superseded by the `_fast` variant |
+| `interactive_fast.yaml` | baltic01 | `amlt-sing/acpt-torch2.8.x` platform | passes — ssh verified 2026-09-04 |
 
 Submit any of them the same way:
 
@@ -291,6 +323,217 @@ amlt run <file>.yaml :<job> <experiment> --sla Premium --yes
 ```
 
 Reuse one experiment name to get them side by side in a single `amlt status`.
+
+## Interactive box — submit, ssh, and connect VS Code
+
+`interactive_fast.yaml` holds a single H100 open so you can work on it directly.
+Use `./run.sh`, which supplies the flags that are easy to forget:
+
+```bash
+./run.sh interactive-fast
+```
+
+That runs `amlt run interactive_fast.yaml :interactive-fast=<job>-<timestamp>
+agoswami-interactive -i --sla Premium --yes`, and appends the job to `RUNS.md`.
+**Note the job name it prints** — every step below needs it.
+
+```bash
+DRY_RUN=1 ./run.sh interactive-fast    # print the command, submit nothing
+```
+
+### Step A — wait for `running`
+
+```bash
+amlt status agoswami-interactive
+```
+
+About 5 minutes with the platform image.
+
+### Step B — ssh in and START THE KEEPALIVE BY HAND
+
+**This is the step that is easy to miss, and skipping it is why earlier boxes
+paused after ~21 hours.**
+
+`amlt ssh` requires the job to have been submitted with `-i`. But `-i` makes
+Amulet replace the config's `command:` block with its own tmux harness — so the
+keepalive declared in `interactive_fast.yaml` **never runs**. The GPU sits idle
+and the platform eventually pauses the job.
+
+So, every time you submit a box:
+
+```bash
+amlt ssh agoswami-interactive :<job-name>
+```
+
+then, on the node:
+
+```bash
+cd /scratch/amlt_code
+nohup python keep_wake.py > outputs/keepalive.log 2>&1 &
+nvidia-smi          # expect a python process holding ~620 MiB
+```
+
+`keep_wake.py` is copied verbatim from `e5-mistral-ft-code`, where it holds
+Singularity jobs open for days: 180s of matmul on every GPU, then 600s rest.
+A `0%` reading is normal — you caught the rest phase. Memory stays allocated.
+
+**Caveat — the keepalive may not be what prevents pausing.** `/tmp/amlt-env` on
+this job shows `SINGULARITY_ENABLE_PROCESS_ACTIVITY_MONITOR="false"`, i.e. idle
+detection is *disabled* (the companion
+`SINGULARITY_PROCESS_ACTIVITY_MONITOR_IDLE_DURATION_IN_SECONDS="1800"` is unarmed).
+If that held for the boxes that paused at 21h and 23h, idle-reaping was never the
+mechanism, and the real cause is more likely the previously-unset
+`max_run_duration_seconds` or plain preemption. Keep the keepalive — it is cheap
+and the setting may vary by cluster or SLA tier — but treat this as unresolved
+until a box survives past ~24h.
+
+### Step C — add the VS Code entry
+
+This writes a `Host` block into `C:\Users\<you>\.ssh\config`, so VS Code can
+connect by name. **Always use `--windows`:**
+
+```bash
+python vscode_ssh_config.py agoswami-interactive <job-name> \
+    --windows --alias amlt-box --write
+```
+
+Then in VS Code: **Remote-SSH: Connect to Host…** → `amlt-box`.
+
+**Open a *local* VS Code window first** — `File → New Window`, with no remote
+indicator in the bottom-left. VS Code cannot nest one remote inside another, so
+Remote-SSH is unavailable from a window already attached to WSL. If Remote-SSH
+seems missing from the command palette, that is why.
+
+Verify without opening VS Code:
+
+```bash
+/mnt/c/Windows/System32/OpenSSH/ssh.exe -o BatchMode=yes amlt-box "hostname"
+```
+
+`node-0` and exit 0 means VS Code will work.
+
+The script's default (no `--windows`) writes WSL's `~/.ssh/config` instead. That
+is **not** useful for VS Code — it only serves plain `ssh amlt-box` from a WSL
+terminal, which `amlt ssh <exp> :<job>` already does with no config at all.
+
+### Step D — set up the shell inside VS Code
+
+A VS Code terminal is a plain login shell, so **conda and `python` are missing**:
+
+```
+root@node-0:~# which python
+root@node-0:~#          # nothing
+```
+
+`amlt ssh` doesn't have this problem because it sends an explicit remote command
+that sources `/tmp/amlt-env` and `cd`s to the code dir before handing you a shell
+(visible in `ssh -v` output as `debug1: Sending command: ...`). Nothing does that
+for VS Code.
+
+`/tmp/amlt-env` is the job's full environment — `PATH` with
+`/opt/conda/envs/ptca/bin`, `AMLT_OUTPUT_DIR`, `AMLT_CODE_DIR`, and the rest.
+Run these in the VS Code terminal, **in this order**:
+
+```bash
+echo '[ -e /tmp/amlt-env ] && . /tmp/amlt-env' >> "$HOME/.bashrc"  # future terminals
+. /tmp/amlt-env                                                    # this terminal
+cd /scratch/amlt_code
+which python        # expect /opt/conda/envs/ptca/bin/python
+conda env list      # expect ptca active
+```
+
+**Use `"$HOME/.bashrc"`, never a hardcoded path.** There are three plausible home
+directories on one node and the shell picks a non-obvious one:
+
+| Path | Whose |
+| --- | --- |
+| `/root` | what `whoami` (root) suggests — **wrong** |
+| `/home/aiscuser` | the job's execution user, and what `/tmp/amlt-env` sets `HOME` to |
+| `/home/azureuser` | **what `$HOME` actually is** — the ssh `User` from the Host block |
+
+Symptom of getting it wrong: the line is present in the file you edited, a new
+shell still has no `python`, and `echo $AMLT_JOB_NAME` is empty — proving the file
+was never sourced.
+
+Two more quirks of sourcing that file:
+
+- It sets `HOME=/home/aiscuser`, so appending with `~` **after** sourcing writes to
+  a different file than before. Append first, source second.
+- It sets `PWD=/scratch/amlt_code`, which overwrites bash's own `PWD` — your prompt
+  will claim you moved without `cd`-ing. The shell's real directory is unchanged;
+  run `cd .` to resync.
+
+For the Python extension, set the interpreter by hand — it does not see a `PATH`
+that only exists after `.bashrc` runs:
+**Python: Select Interpreter** → `/opt/conda/envs/ptca/bin/python`
+
+Do not commit or paste `/tmp/amlt-env` anywhere: it contains a container SSH
+private key, the AzureML run token, an MLflow token, and SAS URLs. All are
+job-scoped and expire with the job, but they are real credentials.
+
+Everything in Steps B and D is **per-job** — the node is rebuilt on every
+submission, so the keepalive and the shell setup are redone each time.
+
+### Keep `--alias` stable, and regenerate after every resubmit
+
+The block's `HostName` is a `wss://` websocket URL minted **per submission**, so
+it dies with the job. Re-run the Step C command after each resubmit. Keeping
+`--alias amlt-box` fixed means VS Code's saved host keeps working — the script
+replaces the block in place using its `# >>> amlt amlt-box >>>` markers.
+
+### Why the Windows block differs
+
+Amulet's block is WSL-bound: transport is a `ProxyCommand` running
+`/opt/az/bin/python3` against the `az ml` extension under `~/.azure/`, neither of
+which exists on Windows. `--windows` rewrites three fields:
+
+| Field | Windows value | Why |
+| --- | --- | --- |
+| `ProxyCommand` | prefixed `wsl.exe -e` | delegates only the tunnel to WSL, reusing its `az login` |
+| `IdentityFile` | `C:\Users\<you>\.ssh\id_ed25519` | Windows ssh cannot read `/home/...` |
+| `UserKnownHostsFile` | `NUL` | Windows equivalent of `/dev/null` |
+
+Copying the block to Windows *without* those rewrites cannot work, no matter how
+the keys are arranged — `HostName` is a URL, not a host, so everything depends on
+the ProxyCommand binary being reachable.
+
+### If ssh fails
+
+`vscode_ssh_config.py` reports **"The job must be running AND have been submitted
+with `amlt run -i`"** for *every* failure — it only knows it could not find an ssh
+command in Amulet's output. That message named the wrong cause in both real
+failures we hit. Get the actual error:
+
+```bash
+python vscode_ssh_config.py agoswami-interactive <job-name> --dump /tmp/sshraw.txt
+sed -e 's/\x1b\[[0-9;]*[A-Za-z]//g' /tmp/sshraw.txt | grep -iE "error|could not|failed"
+```
+
+Causes seen so far:
+
+| Real error in the dump | Fix |
+| --- | --- |
+| `Could not find the Azure CLI SSH connector` | `az extension add --name ml` |
+| `No authentication method succeeded` | `az login` (then re-pin `az account set --subscription "ASG Azure ML"`) |
+| no key offered | copy `id_ed25519` into WSL `~/.ssh/` and `chmod 600` |
+
+Amulet uses **your** key — it logs `Providing ~/.ssh/id_ed25519.pub … for ssh
+login` at submit time. On WSL the keys often live only on the Windows side:
+
+```bash
+cp /mnt/c/Users/<you>/.ssh/id_ed25519* ~/.ssh/
+chmod 600 ~/.ssh/id_ed25519
+```
+
+Copy, don't symlink — DrvFs (`/mnt/c`) cannot hold `0600`, and ssh rejects a
+world-readable private key.
+
+### Teardown
+
+```bash
+amlt cancel agoswami-interactive :<job-name>
+```
+
 
 ## Choosing a cluster and an image
 
