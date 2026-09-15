@@ -5,7 +5,8 @@ is explicit that local changes (installs, dotfiles, clones) are lost on restart,
 failover, or resubmit. Written 2026-09-13 after losing half a day to step 5.
 
 **A container RESTART is a fresh node.** Observed 2026-09-14 on a 3-day-old box: every
-`.bashrc` edit, the VS Code `Machine/settings.json`, and everything installed were gone,
+`.bashrc` edit, the VS Code `Machine/settings.json`, the remote extensions, and everything
+installed were gone,
 and `/scratch/amlt_code` was back to the uploaded `src/` alone. One thing differs from a
 resubmit: the ssh endpoint still works, so the same alias reconnects and it feels like a
 dropped connection rather than a wipe. **The keepalive does NOT come back** -- `-i`
@@ -297,6 +298,28 @@ container like everything else, so expect that prompt again after a restart.
 exists, pip counts it as satisfied and omits it from the env -- which is how one env ended up
 with `wandb` but not `click`, then not `opentelemetry`, then not `regex`, each only surfacing
 after the previous was fixed.
+
+## Shared: VS Code extensions (client-side, one-time)
+
+Extensions live in `~/.vscode-server/extensions` on the node, which the VS Code **server** owns:
+it installs from what the client asks for, so no node-side script can put them there. They are
+wiped by a container restart with everything else.
+
+Automate it once, on the Windows side, in `C:\Users\<you>\AppData\Roaming\Code\User\settings.json`:
+
+```json
+"remote.SSH.defaultExtensions": [
+    "ms-python.python",
+    "ms-toolsai.jupyter"
+]
+```
+
+Added 2026-09-14. Applies per-connection, so it covers both tracks, every new box, and every
+restart. Pylance and debugpy arrive as dependencies of `ms-python.python`.
+
+Without it the failure is quiet: the setup script registers a jupyter kernel (`Python (ptca4)`,
+`Python (phitrain)`) that appears in no picker, because nothing on the node can open a notebook.
+Observed on the phitrain box, which had the whole `ms-python` family but no `ms-toolsai.jupyter`.
 
 ## Checking the keepalive
 

@@ -52,7 +52,7 @@
 # Nothing here survives a container restart -- not /scratch, not the env, not the dotfiles.
 # Re-run the whole script after one; every step is idempotent.
 #
-# Full background: _reports/0913/fresh-node-setup.md
+# Full background: hello_world_amulet/fresh-node-setup.md
 set -uo pipefail
 
 CONDA=/opt/conda/bin/conda
@@ -261,9 +261,13 @@ if [ -n "${SKIP_ENV:-}" ]; then skip "SKIP_ENV set -- register the kernel yourse
 # writes to $HOME/.local/share/jupyter/kernels, and the VS Code server runs with
 # HOME=/home/aiscuser, which is where it looks.
 #
-# The VS Code EXTENSIONS (ms-python.python, ms-toolsai.jupyter) cannot be automated here --
-# VS Code installs them into ~/.vscode-server/extensions itself on first connect, and they are
-# lost with the container like everything else, so expect that prompt again after a restart.
+# The VS Code EXTENSIONS (ms-python.python, ms-toolsai.jupyter) cannot be automated FROM HERE:
+# the VS Code server owns ~/.vscode-server/extensions and installs from what the CLIENT asks
+# for, so a shell writing files there registers nothing. They are lost with the container like
+# everything else. Automate it client-side instead, once, in the Windows user settings.json:
+#     "remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+# That reinstalls them on every connection, so a restart wipe is self-healing. Without it the
+# kernel registered below exists but nothing on the node can open a notebook to use it.
 if $PY -m jupyter kernelspec list 2>/dev/null | grep -q "^  $ENV_NAME "; then
   skip "kernel '$ENV_NAME' already registered"
 else
