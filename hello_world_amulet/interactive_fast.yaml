@@ -32,12 +32,29 @@ target:
   service: manifold
   name: baltic01
   workspace_name: ai-frontiers-sa-ws
+  # Do NOT switch this to aifrontiers_ws (MSR LIT sub). Submission succeeds, but the job dies
+  # mounting storage: StreamError(PermissionDenied) -- the `aifrontiers` UAI has no data-plane
+  # access to aifrontierssadata. Tried 2026-09-14.
 
 # A team-image variant (torch 2.10) existed as interactive.yaml; removed 2026-09-11,
 # its cold start on baltic01 was ~70 min against ~7 min for the platform image.
 # Manifold platform image: short alias, no registry, resolved per-target by
 # Singularity so nothing is staged across regions. Starts in ~5 min regardless
 # of which node it lands on. Ships torch 2.8 rather than the team image's 2.10.
+
+# Same two mounts the eval configs use. `data` holds models and tokenizers; `aion-jobs` holds
+# job results. Mounts are fixed at SUBMIT time -- a running box cannot gain them, which is why
+# adding this needed a resubmit.
+storage:
+  data:
+    storage_account_name: aifrontierssadata
+    container_name: data
+    mount_dir: /mnt/data
+  output:
+    storage_account_name: aifrontierssadata
+    container_name: aion-jobs
+    mount_dir: /mnt/output
+
 environment:
   image: amlt-sing/acpt-torch2.8.x-py3.10-cuda12.6-ubuntu22.04
 
@@ -48,7 +65,10 @@ jobs:
   - name: interactive-fast
     priority: high
     sla_tier: premium
-    sku: 80G1-H100
+    sku: 80G1-H100        # 80G8-H100 for a multi-GPU box; it gang-schedules, so it queues longer
+    # NOTE: submitted with -i, so THIS BLOCK DOES NOT RUN (amlt replaces it with its debugger
+    # harness). The keepalive below, and any staging of weights to /scratch, must be started by
+    # hand after ssh-ing in -- see CLAUDE.amulet_learnings.md section 10.
     command:
       - set -e -o pipefail
       - mkdir -p "$$AMLT_OUTPUT_DIR"

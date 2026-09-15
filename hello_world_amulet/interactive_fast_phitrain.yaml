@@ -1,0 +1,82 @@
+# Amulet config file. Docs: https://amulet-docs.azurewebsites.net/config_file.html
+#
+#   project:    agoswami-hello  (aifrontierssadata/data)  -- .amltconfig is in this dir
+#   experiment: agoswami-interactive
+#
+# An interactive H100 box set up for phitrain work, as opposed to interactive_fast.yaml which
+# is for reasoning-from-scratch. Two things differ, and both come from
+# aifsdk-experiments/abgoswam/amlt_01/phitrain_baltic.yaml :smoke -- the job proven to import
+# torch/torchao/transformers/vllm and the tool_agent recipe on this cluster:
+#
+#   IMAGE    the team ACR image, not the Manifold platform one. phitrain needs vllm, torchao and
+#            flash-attn, which are baked in. Multi-GB and in southafricanorth while baltic01 is
+#            in eastus2, so a COLD start was ~70 min; it is cached there now (~7 min warm).
+#   STORAGE  both mounts, so /mnt/data/aion (datasets, checkpoints) and /mnt/output are visible.
+#
+# Submit -- CONFIG= is required, run.sh defaults to interactive_fast.yaml:
+#   CONFIG=interactive_fast_phitrain.yaml ./run.sh interactive-fast-phitrain
+#   CONFIG=interactive_fast_phitrain.yaml DRY_RUN=1 ./run.sh interactive-fast-phitrain
+#
+# run.sh:37 passes -i, which `amlt ssh` (and therefore vscode_ssh_config.py) requires. -i also
+# DISCARDS the command: block below, so the keepalive and everything else is started by hand:
+#   bash /scratch/amlt_code/fresh_node_setup_phitrain.sh
+#
+# phitrain itself is NOT uploaded here. code.local_dir is just src/, so the box gets the setup
+# scripts and nothing else; microsoft/aifsdk is private and is cloned on the node with a PAT.
+# (phitrain_baltic.yaml takes the other route -- it uploads $AIFSDK_ROOT through an allowlist --
+# which is right for a batch job that must run unattended, and wrong here because an uploaded
+# snapshot has no .git and cannot be committed from.)
+description: Interactive H100 box on baltic01 for phitrain (team image, both mounts)
+
+target:
+  service: manifold
+  name: baltic01
+  workspace_name: ai-frontiers-sa-ws
+
+storage:
+  data:
+    storage_account_name: aifrontierssadata
+    container_name: data
+    mount_dir: /mnt/data
+  output:
+    storage_account_name: aifrontierssadata
+    container_name: aion-jobs
+    mount_dir: /mnt/output
+
+environment:
+  registry: aifrontierssacr.azurecr.io
+  image: nvidia25.11-pytorch2.10.0-te2.13-deepspeed0.18.9-fa2main-vllm0.18.0:20260415
+
+code:
+  local_dir: $CONFIG_DIR/src
+
+jobs:
+  - name: interactive-fast-phitrain
+    priority: high
+    sla_tier: premium
+    sku: 80G1-H100
+    command:
+      # NOT RUN under -i: amlt replaces this block with its debugger harness. Kept so the config
+      # is submittable without -i (batch use), and as the reference for what the setup script
+      # starts by hand.
+      - set -e -o pipefail
+      - mkdir -p "$$AMLT_OUTPUT_DIR"
+      - nohup bash -c 'while true; do python keep_wake.py; echo "keepalive exited, respawning in 5s"; sleep 5; done' > "$$AMLT_OUTPUT_DIR/keepalive.log" 2>&1 &
+      - sleep 15
+      - nvidia-smi
+      - sleep infinity
+    submit_args:
+      # 7 days. A safety net against a forgotten box, not a target.
+      max_run_duration_seconds: 604800
+      env:
+        AZUREML_COMMON_RUNTIME_USE_SBOM_CAPABILITY: "false"
+        # Single-$ vars: Amulet resolves them LOCALLY at submit time, from your shell (~/.bashrc).
+        # An UNSET one interpolates to the empty string silently -- the job then dies much later
+        # with a confusing auth error, so export all three before submitting.
+        GATEWAY_API_KEY: $GATEWAY_API_KEY
+        HF_TOKEN: $HF_TOKEN
+        WANDB_API_KEY: $WANDB_API_KEY
+        WANDB_CACHE_DIR: /tmp/wandb-cache
+        WANDB_DATA_DIR: /tmp/wandb-data
+        WANDB_DIR: /tmp/wandb
+        WANDB_HOST: https://microsoft-research.wandb.io
