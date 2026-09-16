@@ -71,6 +71,9 @@ CODE=/scratch/amlt_code
 # REPO_URL empty -> skip the clone and the editable install entirely (steps 7-8), for cases
 # where the repo is private and you will clone it by hand.
 REPO_URL="${REPO_URL-https://github.com/abgoswam/reasoning-from-scratch.git}"
+# Written into the VS Code Machine settings so the interpreter is preselected. The phitrain
+# variant overrides it to its venv, since that track has no conda env.
+DEFAULT_PY="${DEFAULT_PY:-/opt/conda/envs/$ENV_NAME/bin/python}"
 REPO=$CODE/reasoning-from-scratch
 # The repo's own deps come from `pip install -e .` (torch, jupyterlab, tokenizers, nbformat,
 # sympy, matplotlib). These are the extras it does not declare.
@@ -148,7 +151,17 @@ echo "== 5. VS Code machine settings =="
 # the difference between usable and not.
 VSC=/home/aiscuser/.vscode-server/data/Machine
 if [ -f "$VSC/settings.json" ]; then
-  skip "$VSC/settings.json already present"
+  # Present but possibly stale: ENV_NAME differs between runs, and the phitrain track points
+  # somewhere else entirely. Patch just this one key rather than rewriting the file.
+  if grep -q "\"python.defaultInterpreterPath\": \"$DEFAULT_PY\"" "$VSC/settings.json"; then
+    skip "$VSC/settings.json already present (interpreter $DEFAULT_PY)"
+  elif grep -q '"python.defaultInterpreterPath"' "$VSC/settings.json"; then
+    sed -i "s|\"python.defaultInterpreterPath\": \"[^\"]*\"|\"python.defaultInterpreterPath\": \"$DEFAULT_PY\"|" \
+      "$VSC/settings.json" && ok "updated interpreter -> $DEFAULT_PY"
+  else
+    sed -i "s|\(\"terminal.integrated.defaultProfile.linux\": \"aiscuser\",\)|\1\n  \"python.defaultInterpreterPath\": \"$DEFAULT_PY\",|" \
+      "$VSC/settings.json" && ok "added interpreter -> $DEFAULT_PY"
+  fi
 else
   mkdir -p "$VSC"
   cat > "$VSC/settings.json" <<'JSON'
@@ -157,6 +170,7 @@ else
     "aiscuser": { "path": "su", "args": ["-", "aiscuser"] }
   },
   "terminal.integrated.defaultProfile.linux": "aiscuser",
+  "python.defaultInterpreterPath": "__DEFAULT_PY__",
   "files.watcherExclude": {
     "**/.git/objects/**": true, "**/__pycache__/**": true,
     "/scratch/omni-eval/**": true, "/opt/conda/**": true, "**/*.jsonl": true
@@ -170,7 +184,8 @@ else
   "extensions.autoUpdate": false
 }
 JSON
-  ok "wrote $VSC/settings.json (new terminals open as aiscuser)"
+  sed -i "s|__DEFAULT_PY__|$DEFAULT_PY|" "$VSC/settings.json"
+  ok "wrote $VSC/settings.json (terminals as aiscuser, interpreter $DEFAULT_PY)"
 fi
 
 echo "== 6. $ENV_NAME env =="

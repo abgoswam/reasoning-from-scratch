@@ -89,7 +89,9 @@ skip() { printf '  --    %s\n' "$1"; }
 warn() { printf '  \033[33mwarn\033[0m  %s\n' "$1"; }
 
 # steps 1-5 (keepalive, dotfiles, VS Code settings, mounts) are identical; skip 6-10
-SKIP_ENV=1 REPO_URL="" QUIET_MANUAL=1 bash "$HERE/fresh_node_setup.sh" "$@"
+# DEFAULT_PY: this track has no conda env, so point VS Code at the venv step 11 builds.
+SKIP_ENV=1 REPO_URL="" QUIET_MANUAL=1 DEFAULT_PY="$VENV/bin/python" \
+  bash "$HERE/fresh_node_setup.sh" "$@"
 
 echo "== 11. venv with system site-packages =="
 if [ -x "$VENV/bin/python" ]; then
@@ -149,10 +151,18 @@ cat <<EOF
     cd aifsdk
     git sparse-checkout set phitrain phiagent
     git remote set-url origin https://github.com/microsoft/aifsdk.git   # drop token from .git/config
+    printf 'https://x-access-token:%s@github.com\\n' "\$(cat ~/.git-token)" > ~/.git-credentials
+    chmod 600 ~/.git-credentials
+    git config --global credential.helper store     # 'store' does nothing without this line
+
+  The last three lines matter: this is a --filter=blob:none partial clone, so any later
+  checkout or fetch has to pull blobs from origin. Without a credential helper the next
+  'git checkout <branch>' stops at an interactive "Username for 'https://github.com':" prompt.
 
   --filter=blob:none --sparse matters: aifsdk is a ~27 GB working tree and you need two
   directories. Expect it to sit quiet for a while fetching history metadata.
-  The set-url line strips the token back out of .git/config; re-supply it when you push.
+  The set-url line strips the token back out of .git/config; the helper serves it from then on,
+  for fetch, checkout and push alike.
 
   --- c. [NODE] editable install --------------------------------------------------------------------
     cd $CODE/aifsdk                                      # <- MUST be the repo root
@@ -190,5 +200,6 @@ cat <<EOF
     $VENV/bin/python -c 'import phitrain, phiagent; print(phitrain.__file__)'   # must be under $CODE
     cd phitrain && $VENV/bin/python -c 'import recipes.rl.tool_agent.train; print("recipe import OK")'
 
-  In VS Code select the interpreter: $VENV/bin/python
+  VS Code interpreter: preselected to $VENV/bin/python by step 5 (reload the window if it
+  still asks). Notebook kernel: 'Python (phitrain)'.
 EOF

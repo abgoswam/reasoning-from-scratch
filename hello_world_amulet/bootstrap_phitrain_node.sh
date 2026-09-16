@@ -81,7 +81,23 @@ CODE=$CODE
 ok()   { printf '  \033[32mok\033[0m    %s\n' "\$1"; }
 skip() { printf '  --    %s\n' "\$1"; }
 
-# -- 5. clone --
+# -- 5a. credential helper --
+# This is a --filter=blob:none partial clone, so ANY later checkout/fetch has to pull blobs
+# from origin. Stripping the token out of .git/config (below) therefore breaks the very next
+# 'git checkout <branch>' with an interactive "Username for 'https://github.com':" prompt.
+# The helper keeps the token in one 0600 file instead of in every remote URL. Seen 2026-09-14.
+if [ "\$(git config --global credential.helper)" = "store" ] && [ -s /home/aiscuser/.git-credentials ]; then
+  skip "credential helper already configured"
+else
+  printf 'https://x-access-token:%s@github.com\n' "\$(cat /home/aiscuser/.git-token)" \
+    > /home/aiscuser/.git-credentials
+  chmod 600 /home/aiscuser/.git-credentials
+  # 'store' is inert on its own -- without this line the file is never consulted.
+  git config --global credential.helper store
+  ok "credential helper: store -> ~/.git-credentials (0600)"
+fi
+
+# -- 5b. clone --
 if [ -d "\$CODE/aifsdk/.git" ]; then
   skip "\$CODE/aifsdk already cloned"
 else
@@ -92,7 +108,7 @@ else
       "https://x-access-token:\$TOKEN@github.com/microsoft/aifsdk.git" || exit 1
   cd aifsdk || exit 1
   git sparse-checkout set phitrain phiagent || exit 1
-  # strip the token back out of .git/config
+  # strip the token back out of .git/config -- the helper above serves it from now on
   git remote set-url origin https://github.com/microsoft/aifsdk.git
   ok "cloned, sparse: phitrain phiagent"
 fi
@@ -128,6 +144,7 @@ cat <<EOF
   On the node:   su - aiscuser && source $VENV/bin/activate && phitrain-cli --help
   In VS Code:    interpreter $VENV/bin/python   |   kernel 'Python (phitrain)'
 
-  The token is still at /home/aiscuser/.git-token (0600) for pushes. To revoke it early:
-    $SSH $NODE 'rm /home/aiscuser/.git-token'
+  git is configured to use the token for fetch/checkout/push (credential.helper=store).
+  It lives in two 0600 files on the node. To revoke it early:
+    $SSH $NODE 'rm /home/aiscuser/.git-token /home/aiscuser/.git-credentials'
 EOF
