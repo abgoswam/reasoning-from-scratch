@@ -30,7 +30,7 @@ description: Interactive H100 box on baltic01 for phitrain (team image, both mou
 
 target:
   service: manifold
-  name: baltic01
+  name: ai-frontiers-sa-vc            # baltic01 retired 2026-09
   workspace_name: ai-frontiers-sa-ws
 
 storage:

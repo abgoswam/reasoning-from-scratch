@@ -15,7 +15,7 @@ description: ch07 RLVR GRPO training on a single H100
 
 target:
   service: manifold
-  name: baltic01
+  name: ai-frontiers-sa-vc            # baltic01 retired 2026-09
   workspace_name: ai-frontiers-sa-ws
 
 # Platform image: torch 2.8 satisfies pyproject (>=2.7.1,<2.11) and py3.10 satisfies

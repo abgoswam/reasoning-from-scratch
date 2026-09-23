@@ -30,7 +30,7 @@ description: Interactive H100 box on baltic01 with a platform image (fast start)
 
 target:
   service: manifold
-  name: baltic01
+  name: ai-frontiers-sa-vc            # baltic01 retired 2026-09
   workspace_name: ai-frontiers-sa-ws
   # Do NOT switch this to aifrontiers_ws (MSR LIT sub). Submission succeeds, but the job dies
   # mounting storage: StreamError(PermissionDenied) -- the `aifrontiers` UAI has no data-plane
